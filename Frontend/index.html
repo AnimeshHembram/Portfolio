@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animesh Hembram — Portfolio</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div class="cursor" id="cursor"></div>
+
+  <!-- LOADING PAGE -->
+  <div class="loader-screen" id="loaderScreen">
+    <div class="loader"></div>
+  </div>
+
+  <!-- LANDING PAGE -->
+  <main class="landing" id="landing">
+    <img alt="" class="landing-image" id="landingImage" />
+    <script>
+      // Day/night image — picked from the visitor's own device clock,
+      // before the browser ever requests an image, so only the right
+      // one is downloaded.
+      (function () {
+        var hour = new Date().getHours();
+        var isDay = hour >= 5 && hour < 18; // 5 AM – 6 PM
+        document.getElementById("landingImage").src = isDay
+          ? "assets/images/landing-day.webp"
+          : "assets/images/landing.webp";
+      })();
+    </script>
+
+    <!-- Hover hotspots: hidden text reveals only on hover -->
+    <div class="hotspot hotspot-works" data-title="Works" data-desc="A look at recent projects and case studies."></div>
+    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do."></div>
+    <div class="hotspot hotspot-socials-1" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
+    <div class="hotspot hotspot-socials-2" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
+    <div class="hotspot hotspot-more" data-title="More" data-desc="A few extra bits and links."></div>
+    <div class="hotspot hotspot-music" data-title="Music On/Off" data-desc="Toggle background music."></div>
+    <div class="hotspot hotspot-open-to-work" data-title="Open to work" data-desc="Available for new roles and projects."></div>
+    <div class="hotspot hotspot-coffee" data-title="Buy me a Coffee" data-desc="Support the work with a coffee."></div>
+  </main>
+
+  <!-- Hover reveal text — follows the cursor -->
+  <div class="hover-label" id="hoverLabel">
+    <span class="hover-label-title" id="hoverTitle"></span>
+    <span class="hover-label-desc" id="hoverDesc"></span>
+  </div>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
