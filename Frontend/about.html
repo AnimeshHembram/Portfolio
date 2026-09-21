@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About — Animesh Hembram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;0,800;1,700&family=Pixelify+Sans:wght@700&family=Italianno&display=swap" rel="stylesheet" />
+<style>
+  /* =============== Design tokens (from Figma: Portfolio Website, node 61:76) =============== */
+  :root {
+    --color-bg: #e5dede;
+    --color-text: #000000;
+    --color-link: #0834a4;
+
+    --font-nav: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-design: 'Inter', sans-serif;
+    --font-tech: 'Pixelify Sans', monospace;
+    --font-story: 'Italianno', cursive;
+
+    --fs-nav: 1.40625rem;   /* 22.5px */
+    --fs-name: 1.5rem;      /* 24px */
+    --fs-tagline: 1.5rem;   /* 24px */
+    --fs-pillar: 3rem;      /* 48px */
+    --fs-body: 1.5rem;      /* 24px */
+
+    --space-page-x: 4.78125rem; /* 76.5px */
+    --space-page-top: 2.65rem;  /* 42.4px */
+
+    --gap-logo-name: 5.15625rem;  /* 82.5px */
+    --gap-name-tagline: 1.1rem;   /* 17.6px */
+    --gap-tagline-pillars: 1.08rem; /* 17.3px */
+    --gap-pillars-body: 1.6rem;   /* 25.5px */
+    --gap-body-footer: 8.6rem;    /* 137.6px */
+
+    --logo-width: 33.9rem;   /* 542px */
+    --pencil-w: 17rem;       /* 272px */
+    --pencil-h: 2.9rem;      /* 46.5px */
+    --crt-w: 6.14rem;        /* 98px */
+    --crt-h: 5.6rem;         /* 89.6px */
+    --tape-w: 9.68rem;       /* 155px */
+    --resume-h: 5.625rem;    /* 90px */
+
+    --nav-collapse-bp: 1024px;
+    --mobile-bp: 768px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  html { font-size: 16px; }
+  @media (max-width: 1024px) { html { font-size: 11.4px; } }
+  @media (max-width: 768px)  { html { font-size: 9px; } }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: var(--space-page-top) var(--space-page-x) 3rem;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* =============== Header / Nav =============== */
+
+  .about-header {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .about-header__home {
+    font-family: var(--font-nav);
+    font-weight: 800;
+    font-size: var(--fs-nav);
+    color: var(--color-text);
+  }
+  .about-header__home:hover { opacity: 0.65; }
+
+  .about-header__toggle {
+    display: none;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 2px solid var(--color-text);
+    border-radius: 4px;
+    background: transparent;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .about-header__toggle-bar,
+  .about-header__toggle-bar::before,
+  .about-header__toggle-bar::after {
+    position: absolute;
+    left: 20%;
+    width: 60%;
+    height: 2px;
+    background: var(--color-text);
+    transition: transform 0.25s ease, opacity 0.25s ease, top 0.25s ease;
+  }
+  .about-header__toggle-bar { top: 50%; transform: translateY(-50%); }
+  .about-header__toggle-bar::before { content: ""; top: -0.55rem; }
+  .about-header__toggle-bar::after { content: ""; top: 0.55rem; }
+  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar { background: transparent; }
+  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar::before {
+    top: 0; transform: rotate(45deg);
+  }
+  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar::after {
+    top: 0; transform: rotate(-45deg);
+  }
+
+  .about-header__nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    text-align: right;
+  }
+
+  .about-header__nav-link {
+    font-family: var(--font-nav);
+    font-weight: 800;
+    font-size: var(--fs-nav);
+    color: var(--color-link);
+    line-height: 1.35;
+  }
+  .about-header__nav-link:hover { opacity: 0.7; text-decoration: underline; }
+
+  /* Tablet + mobile: hamburger nav */
+  @media (max-width: 1024px) {
+    .about-header__toggle { display: block; }
+
+    .about-header__nav {
+      position: absolute;
+      top: calc(100% + 0.75rem);
+      right: 0;
+      align-items: flex-end;
+      gap: 0.6rem;
+      background: var(--color-bg);
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.25s ease;
+      z-index: 10;
+    }
+    .about-header__nav--open {
+      max-height: 20rem;
+      opacity: 1;
+    }
+  }
+
+  /* =============== Main content =============== */
+
+  .about-main {
+    padding-top: 0;
+  }
+
+  .about-main__logo {
+    display: block;
+    width: var(--logo-width);
+    max-width: 100%;
+    height: auto;
+    margin: 0 0 var(--gap-logo-name);
+  }
+
+  .about-main__name {
+    margin: 0 0 var(--gap-name-tagline);
+    font-size: var(--fs-name);
+    font-weight: 400;
+  }
+  .about-main__name strong { font-weight: 700; }
+
+  .about-main__tagline {
+    margin: 0 0 var(--gap-tagline-pillars);
+    font-size: var(--fs-tagline);
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  .about-main__pillars {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 0 0 var(--gap-pillars-body);
+  }
+
+  .about-main__pillar {
+    white-space: nowrap;
+    font-size: var(--fs-pillar);
+    line-height: 1;
+  }
+  .about-main__pillar--design {
+    font-family: var(--font-design);
+    font-weight: 700;
+  }
+  .about-main__pillar--tech {
+    font-family: var(--font-tech);
+    font-weight: 700;
+  }
+  .about-main__pillar--story {
+    font-family: var(--font-story);
+    font-weight: 400;
+  }
+
+  .about-main__icon { height: auto; display: block; }
+  .about-main__icon--pencil {
+    width: var(--pencil-w);
+    aspect-ratio: 724 / 124;
+    object-fit: cover;
+  }
+  .about-main__icon--crt {
+    width: var(--crt-w);
+    height: var(--crt-h);
+    object-fit: cover;
+  }
+
+  .about-main__description {
+    max-width: 64rem;
+    margin: 0;
+    font-size: var(--fs-body);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  .about-main__description em {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-style: italic;
+  }
+
+  /* =============== Footer =============== */
+
+  .about-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: var(--gap-body-footer);
+  }
+
+  .about-footer__tape {
+    display: block;
+    width: var(--tape-w);
+    height: auto;
+  }
+
+  .about-footer__resume {
+    display: block;
+    flex-shrink: 0;
+  }
+  .about-footer__resume-icon {
+    display: block;
+    height: var(--resume-h);
+    width: auto;
+  }
+  .about-footer__resume:hover { opacity: 0.75; }
+
+  @media (max-width: 768px) {
+    .about-footer { align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="about-header">
+    <a href="index.html" class="about-header__home">home.</a>
+
+    <button
+      type="button"
+      class="about-header__toggle"
+      id="navToggle"
+      aria-expanded="false"
+      aria-controls="aboutNav"
+      aria-label="Toggle navigation menu"
+    >
+      <span class="about-header__toggle-bar"></span>
+    </button>
+
+    <nav class="about-header__nav" id="aboutNav">
+      <a href="works.html" class="about-header__nav-link">works.</a>
+      <a href="socials.html" class="about-header__nav-link">socials.</a>
+      <a href="more.html" class="about-header__nav-link">more.</a>
+    </nav>
+  </header>
+
+  <main class="about-main">
+    <img src="assets/aboutme/aboutme.png" alt="About me hand-lettered logo" class="about-main__logo" />
+
+    <p class="about-main__name">Im <strong>ANIMESH HEMBRAM</strong></p>
+    <p class="about-main__tagline">I&rsquo;m a Creative Builder who enjoys turning ideas into thoughtful digital experiences across</p>
+
+    <div class="about-main__pillars">
+      <span class="about-main__pillar about-main__pillar--design">DESIGN</span>
+      <img src="assets/aboutme/pencil.png" alt="Pencil icon" class="about-main__icon about-main__icon--pencil" />
+      <span class="about-main__pillar about-main__pillar--tech">TECHNOLOGY</span>
+      <img src="assets/aboutme/CRT computer.png" alt="Retro CRT computer icon" class="about-main__icon about-main__icon--crt" />
+      <span class="about-main__pillar about-main__pillar--story">STORYTELLING.</span>
+    </div>
+
+    <p class="about-main__description">I care about making things simple, purposeful, and <em>visually strong</em> while keeping the identity and character of a brand intact. I&rsquo;m always ready to <em>learn, experiment, collaborate</em>, and take on work that pushes an idea further.</p>
+  </main>
+
+  <footer class="about-footer">
+    <img src="assets/aboutme/cassette.png" alt="Cassette tape" class="about-footer__tape" />
+
+    <a href="assets/aboutme/Animesh-Hembram-Resume.pdf" class="about-footer__resume" download aria-label="Download resume">
+      <img src="assets/aboutme/resume-icon.png" alt="Resume, download" class="about-footer__resume-icon" />
+    </a>
+  </footer>
+
+<script>
+  (function () {
+    var toggle = document.getElementById('navToggle');
+    var nav = document.getElementById('aboutNav');
+
+    toggle.addEventListener('click', function () {
+      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+      nav.classList.toggle('about-header__nav--open', !isOpen);
+    });
+
+    // Reset the menu state when leaving the collapsed (tablet/mobile) breakpoint
+    var mq = window.matchMedia('(max-width: 1024px)');
+    function handleBreakpointChange(e) {
+      if (!e.matches) {
+        toggle.setAttribute('aria-expanded', 'false');
+        nav.classList.remove('about-header__nav--open');
+      }
+    }
+    mq.addEventListener('change', handleBreakpointChange);
+  })();
+</script>
+</body>
+</html>

@@ -2,18 +2,6 @@
   box-sizing: border-box;
 }
 
-:root {
-  /* Dock glass tokens (Phase 3.1) — shared by both day and night mode,
-     since the dock sits at body level rather than inside .desktop--day.
-     Values echo the day widgets' glass look (--day-glass-blur/-shadow,
-     --day-widget-fill/-border below) so the dock reads as the same
-     visual language, without depending on tokens scoped to day mode. */
-  --dock-glass-fill: rgba(20, 20, 30, 0.45);
-  --dock-glass-border: rgba(255, 255, 255, 0.18);
-  --dock-glass-blur: blur(16px);
-  --dock-glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
 html,
 body {
   margin: 0;
@@ -362,6 +350,215 @@ body {
   }
 }
 
+/* ---------------- Dock (liquid glass) ---------------- */
+
+.dock-wrapper {
+  position: fixed;
+  left: 50%;
+  bottom: 2.5rem;
+  transform: translateX(-50%);
+  z-index: 40;
+}
+
+.liquidGlass-wrapper {
+  position: relative;
+  display: flex;
+  font-weight: 600;
+  overflow: hidden;
+  box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+.liquidGlass-effect {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  backdrop-filter: blur(3px);
+  filter: url(#glass-distortion);
+  overflow: hidden;
+}
+
+.liquidGlass-tint {
+  z-index: 1;
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.liquidGlass-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.liquidGlass-text {
+  z-index: 3;
+  font-size: 2rem;
+  color: black;
+}
+
+.dock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  /* Vertical padding kept thin relative to the icons (real macOS docks
+     hug their icons closely) — horizontal a touch more generous so the
+     pill ends don't feel cramped. */
+  padding: 6px 10px;
+}
+
+/* Duplicate radius onto every layer so the glass wrapper and all its
+   layers round together. A very large px value always resolves to a
+   perfect pill no matter the dock's actual height, at any breakpoint
+   or hover state. */
+.dock,
+.dock > div {
+  border-radius: 999px;
+}
+
+.dock:hover {
+  padding: 8px 13px;
+}
+
+/* The dock markup has two elements sharing the ".dock" class: the
+   outer .liquidGlass-wrapper (the glass pill itself) and the inner
+   icon row nested inside .liquidGlass-text. Only the inner row should
+   carry the padding that sets the bar's height — zeroing it on the
+   outer wrapper stops the two from stacking, which was inflating the
+   dock well past a real macOS dock's proportions. */
+.liquidGlass-wrapper.dock,
+.liquidGlass-wrapper.dock:hover {
+  padding: 0;
+}
+
+.dock img {
+  width: 48px;
+  padding: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+  cursor: pointer;
+  display: block;
+}
+
+.dock img:hover {
+  transform: scale(0.95);
+  transform-origin: center center;
+}
+
+/* Icons wrapped in a link/button (Gmail, LinkedIn, GitHub, Resume,
+   YouTube) — the icon itself keeps all sizing/hover styles above via
+   the descendant `.dock img` rule, this just neutralizes the
+   link/button chrome around it. */
+.dock-icon {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.dock-icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  appearance: none;
+}
+
+/* Thin separator between the app icons and the social/contact icons,
+   echoing macOS's divider before pinned/recent items. */
+.dock-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 2px 2px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 1px;
+}
+
+@media (max-width: 900px) {
+  .dock img {
+    width: 40px;
+  }
+  .dock {
+    gap: 6px;
+    padding: 5px 9px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dock-wrapper {
+    bottom: 1.25rem;
+  }
+  .dock img {
+    width: 30px;
+  }
+  .dock {
+    gap: 4px;
+    padding: 4px 7px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dock-wrapper {
+    bottom: 1rem;
+  }
+  .dock img {
+    width: 24px;
+  }
+  .dock {
+    gap: 3px;
+    padding: 3px 6px;
+  }
+}
+
+/* ---------------- Dock toast ("server issue" placeholder) ---------------- */
+
+.dock-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 9rem;
+  z-index: 70;
+  transform: translate(-50%, 8px);
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.88);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dock-toast.active {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 640px) {
+  .dock-toast {
+    bottom: 6.75rem;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.9rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .dock-toast {
+    bottom: 5.5rem;
+    font-size: 0.7rem;
+    padding: 0.45rem 0.8rem;
+    max-width: calc(100vw - 2rem);
+    white-space: normal;
+    text-align: center;
+  }
+}
+
 /* ================================================================
    DAY MODE — FOUNDATION (Phase 1A)
    ----------------------------------------------------------------
@@ -387,6 +584,14 @@ body {
   display: block;
 }
 
+/* The night dock is a direct child of <body>; the day dock is nested
+   inside .desktop--day. That difference in DOM depth is what lets
+   this rule hide only the night one — no new class was needed on the
+   existing night dock markup. */
+[data-mode="day"] body > .dock-wrapper {
+  display: none;
+}
+
 /* ---------------- Day desktop canvas ---------------- */
 /* Figma-matched color foundation: a warm terracotta → dusty mauve →
    periwinkle gradient, as CSS variables so the palette stays a
@@ -397,9 +602,10 @@ body {
   --day-bg-mid: #98658d;
   --day-bg-bottom: #6f8df5;
 
-  /* Glass tokens — shared by the widget cards below. (--day-glass-fill
-     and --day-glass-border used to also feed the day dock's glass
-     shell; removed in Phase 2.5 along with the dock itself.) */
+  /* Glass tokens — dock (cooler/lavender-tinted, matching the Figma
+     reference's dock glass) */
+  --day-glass-fill: rgba(255, 255, 255, 0.16);
+  --day-glass-border: rgba(255, 255, 255, 0.32);
   --day-glass-blur: blur(16px);
   --day-glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 
@@ -420,6 +626,33 @@ body {
     var(--day-bg-mid) 48%,
     var(--day-bg-bottom) 100%
   );
+}
+
+/* ---------------- Desktop icon column (top-left) ---------------- */
+/* Bare icon artwork directly on the gradient — no glass card behind
+   each icon, matching the Figma reference. */
+.desktop-icons {
+  position: fixed;
+  top: 4rem;
+  left: 2rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.desktop-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.desktop-icon:hover {
+  transform: scale(1.06);
 }
 
 /* ---------------- Widget cluster (top-right) ---------------- */
@@ -483,35 +716,79 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* ---------------- Day background shader (js/day-background.js) ---------------- */
-/* Full-viewport WebGL canvas — the day desktop's base visual layer,
-   replacing the earlier morning-aurora overlay. z-index 0 puts it below
-   the widgets (z-index 40) but it still paints over the
-   .desktop--day gradient below, which is kept in the CSS purely as the
-   fallback shown when WebGL is unavailable or prefers-reduced-motion is
-   on (js/day-background.js hides this canvas in both cases).
-   pointer-events:none keeps it from ever intercepting a click. */
-.day-shader-bg {
+/* ---------------- Day dock content ---------------- */
+/* Reuses every existing .dock/.liquidGlass-* rule for the shell
+   (padding, radius, glass effect, gap, breakpoints) — only the day
+   dock's tint is nudged cooler/lavender to match the Figma reference,
+   and its content is widened with the full icon set plus the "home."
+   / "more." text bookends. */
+.liquidGlass-wrapper.dock--day .liquidGlass-tint {
+  background: rgba(210, 210, 235, 0.35);
+}
+
+.dock-icon-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
+.dock-icon-img:hover {
+  transform: scale(0.95);
+}
+
+.dock-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+/* ---------------- Morning aurora overlay (06:00–07:59 only) ---------------- */
+/* Transparent canvas, positioned above the gradient background but below
+   the icons/widgets/dock (z-index 40) so it reads as a subtle atmospheric
+   layer, never obscuring anything. pointer-events:none keeps it from ever
+   intercepting a click. js/aurora.js toggles display: block/none. */
+.day-aurora {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: 1;
+  display: none;
   pointer-events: none;
 }
 
 /* ---------------- Day-mode cursor ---------------- */
-/* Day mode now uses the exact same JS-driven circle-dot cursor as night
-   mode (see `.cursor` above and js/main.js's mousemove listener, both
-   unscoped to any mode). No day-specific cursor rule is needed: the
-   base `html, body { cursor: none; }` already hides the native OS
-   cursor in day mode too, and `.cursor` is visible by default — there
-   used to be a `[data-mode="day"] .cursor { display: none; }` override
-   plus a custom image cursor here, both removed so day and night render
-   identically. */
+/* A native image cursor replaces night's JS-driven follow-dot, day
+   mode only. Night's mousemove listener in js/main.js keeps moving
+   the `.cursor` dot exactly as before — it is simply not rendered
+   while in day mode, via the rule below, so main.js needs no changes. */
+@media (hover: hover) {
+  [data-mode="day"] {
+    cursor: url("../assets/cursors/cursor.png") 1 0, auto;
+  }
+}
+
+[data-mode="day"] .cursor {
+  display: none;
+}
 
 /* ---------------- Responsive tiers ---------------- */
 @media (max-width: 900px) {
+  .desktop-icons {
+    top: 3rem;
+    left: 1.25rem;
+    gap: 16px;
+  }
+  .desktop-icon {
+    width: 46px;
+    height: 46px;
+  }
   .widget-cluster {
     top: 1.25rem;
     right: 1.25rem;
@@ -531,9 +808,23 @@ body {
   .widget-line--big {
     font-size: 0.95rem;
   }
+  .dock-icon-img {
+    width: 34px;
+    height: 34px;
+  }
+  .dock-label {
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 640px) {
+  .dock-icon-img {
+    width: 26px;
+    height: 26px;
+  }
+  .dock-label {
+    font-size: 0.7rem;
+  }
   .widget-cluster {
     gap: 5px;
   }
@@ -547,6 +838,13 @@ body {
 }
 
 @media (max-width: 420px) {
+  .dock-icon-img {
+    width: 20px;
+    height: 20px;
+  }
+  .dock-label {
+    font-size: 0.6rem;
+  }
   .widget {
     width: 38px;
     min-height: 38px;
@@ -556,198 +854,5 @@ body {
   }
   .widget-text {
     font-size: 0.42rem;
-  }
-}
-
-/* ================================================================
-   DOCK — REAL ICONS + MAGNIFICATION (Phase 3.2, on the Phase 3.1
-   structure)
-   ----------------------------------------------------------------
-   Shared by both day and night mode: the markup lives at body level
-   in index.html, not inside #desktop--day, so it renders identically
-   regardless of data-mode. js/dock.js drives the cursor-distance
-   magnification; everything here is static positioning/sizing that
-   JS temporarily overrides via inline width/height on each .dock-slot
-   (dividers are a separate class and are never touched by JS).
-   ================================================================ */
-
-/* Fixed, horizontally centered at the bottom of the viewport. z-index
-   40 matches the widget cluster's stacking tier — same priority, no
-   spatial overlap (widgets are top-right, this is bottom-center).
-   Sits below .hover-label (60), .loader-screen (100, temporary on
-   load) and .cursor (9999); above the day shader background (0). */
-.dock-wrapper {
-  position: fixed;
-  left: 50%;
-  bottom: 1.5rem;
-  transform: translateX(-50%);
-  z-index: 40;
-  max-width: calc(100vw - 1.5rem);
-}
-
-.dock {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: 26px;
-  background: var(--dock-glass-fill);
-  border: 1px solid var(--dock-glass-border);
-  backdrop-filter: var(--dock-glass-blur);
-  -webkit-backdrop-filter: var(--dock-glass-blur);
-  box-shadow: var(--dock-glass-shadow);
-  max-width: 100%;
-  overflow: visible;
-}
-
-/* Each slot is now a real icon (or a link wrapping one) rather than a
-   placeholder swatch — the icons are already finished, shadowed,
-   rounded-square artwork with transparent backgrounds, so the slot
-   itself carries no background/border of its own; it's just a sizing
-   box. object-fit: contain on the image means the original 1254x1254
-   files are only ever displayed smaller, never cropped or distorted,
-   and never modified on disk. transform-origin: bottom keeps growth
-   pointing upward, like a real macOS dock, instead of growing from
-   the slot's center. Some slots are <a> tags (GitHub/LinkedIn/Gmail);
-   this resets their default inline/underline/color behavior so they
-   size and center exactly like the non-link slots. */
-.dock-slot {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  transform-origin: bottom center;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: inherit;
-}
-
-.dock-icon-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  pointer-events: none; /* hover/click land on .dock-slot, not the image */
-  -webkit-user-drag: none;
-  user-select: none;
-}
-
-/* Group separators — thin static dividers between the PERSONAL /
-   PORTFOLIO / CONTACT & SOCIAL / OTHERS groups. Fixed height (not
-   percentage/stretch) so a neighboring icon's magnification never
-   makes a divider grow or pulse — it only reflects the dock's resting
-   proportions at the current breakpoint. Excluded from js/dock.js's
-   .dock-slot selector entirely, so it's never a magnification target. */
-.dock-divider {
-  width: 1px;
-  height: 26px;
-  align-self: center;
-  background: rgba(255, 255, 255, 0.22);
-  flex: 0 0 auto;
-}
-
-/* Per-icon name tooltip — a small pill above the icon, shown on
-   hover/keyboard focus. Pure CSS (content: attr()) rather than
-   reusing #hoverLabel (that system is built for the landing page's
-   cursor-following title+description hotspots, not single-word dock
-   labels), so it can't interfere with dock.js's spring loop. Anchored
-   to bottom: 100% of the slot, so it stays glued above the icon as
-   dock.js resizes the slot during magnification. */
-.dock-slot[data-tooltip] {
-  cursor: pointer;
-}
-
-.dock-slot[data-tooltip]::before {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  padding: 4px 9px;
-  border-radius: 8px;
-  background: rgba(20, 20, 30, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 5;
-}
-
-.dock-slot[data-tooltip]:hover::before,
-.dock-slot[data-tooltip]:focus-visible::before {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* No hover capability (touch devices) — the magnification effect
-   needs a moving cursor to react to, which doesn't exist on touch, so
-   js/dock.js skips its mousemove wiring entirely in this case. Also
-   hide the hover tooltip there, since touch has no hover state to
-   trigger it and it would otherwise stay stuck open after a tap. */
-@media (hover: none) {
-  .dock-slot {
-    transition: none;
-  }
-  .dock-slot[data-tooltip]::before {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .dock-wrapper {
-    bottom: 1.25rem;
-  }
-  .dock {
-    gap: 8px;
-    padding: 8px 13px;
-  }
-  .dock-slot {
-    width: 34px;
-    height: 34px;
-  }
-  .dock-divider {
-    height: 22px;
-  }
-}
-
-@media (max-width: 640px) {
-  .dock-wrapper {
-    bottom: 1rem;
-  }
-  .dock {
-    gap: 6px;
-    padding: 6px 10px;
-  }
-  .dock-slot {
-    width: 26px;
-    height: 26px;
-  }
-  .dock-divider {
-    height: 18px;
-  }
-}
-
-@media (max-width: 420px) {
-  .dock {
-    gap: 4px;
-    padding: 5px 8px;
-  }
-  .dock-slot {
-    width: 20px;
-    height: 20px;
-  }
-  .dock-divider {
-    height: 14px;
-    margin: 0 1px;
   }
 }

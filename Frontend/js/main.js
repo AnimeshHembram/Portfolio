@@ -57,5 +57,13 @@
       activeHotspot = null;
       hoverLabel.classList.remove("active");
     });
+    // Hotspots that name a target page navigate there on click
+    var href = spot.getAttribute("data-href");
+    if (href) {
+      spot.style.cursor = "pointer";
+      spot.addEventListener("click", function () {
+        window.location.href = href;
+      });
+    }
   });
 })();

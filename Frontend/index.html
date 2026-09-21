@@ -13,29 +13,110 @@
   <div class="cursor" id="cursor"></div>
 
   <!-- LOADING PAGE -->
+  <!-- From Uiverse.io by dexter-st -->
   <div class="loader-screen" id="loaderScreen">
-    <div class="loader"></div>
+    <div class="loader-wrapper">
+      <div class="loader"></div>
+    </div>
   </div>
 
   <!-- LANDING PAGE -->
-  <main class="landing" id="landing">
+  <main class="landing desktop desktop--night" id="landing">
     <img alt="" class="landing-image" id="landingImage" />
     <script>
       // Day/night image — picked from the visitor's own device clock,
       // before the browser ever requests an image, so only the right
       // one is downloaded.
+      //
+      // Confirmed spec: DAY = 04:00–22:59 local time, NIGHT =
+      // 23:00–03:59 local time, switching exactly at 04:00 and 23:00.
+      // Stamps <html data-mode="day|night"> so CSS can key off the mode.
+      //
+      // Live update: if the tab is left open across a 04:00/23:00
+      // boundary, the mode switches on its own — no manual refresh
+      // needed. Implemented as a timer scheduled for the exact next
+      // boundary (self-correcting each run, since it always recomputes
+      // from the real clock rather than just counting elapsed time),
+      // plus a visibilitychange re-check as a safety net for tabs that
+      // were backgrounded long enough for the browser to throttle the
+      // timer.
+      //
+      // For manual testing only: ?mode=day or ?mode=night in the URL
+      // pins the mode and disables the live-update loop entirely, so a
+      // pinned test mode is never overridden by the clock. No override
+      // → behavior is exactly as described above.
       (function () {
-        var hour = new Date().getHours();
-        var isDay = hour >= 5 && hour < 18; // 5 AM – 6 PM
-        document.getElementById("landingImage").src = isDay
-          ? "assets/images/landing-day.webp"
-          : "assets/images/landing.webp";
+        var override = new URLSearchParams(window.location.search).get("mode");
+        var landingImage = document.getElementById("landingImage");
+
+        function computeIsDay() {
+          var hour = new Date().getHours();
+          return hour >= 4 && hour < 23; // DAY 04:00–22:59, NIGHT 23:00–03:59
+        }
+
+        function applyMode(isDay) {
+          document.documentElement.setAttribute("data-mode", isDay ? "day" : "night");
+          // Day mode hides #landing entirely (see CSS), so #landingImage is
+          // never visible while isDay — no point requesting a photo for it.
+          // Only the night photo is ever actually shown, so it's the only
+          // one ever assigned.
+          if (!isDay) {
+            landingImage.src = "assets/images/landing.webp";
+          }
+        }
+
+        var isDay = computeIsDay();
+        if (override === "day") isDay = true;
+        if (override === "night") isDay = false;
+        applyMode(isDay);
+
+        if (!override) {
+          var currentIsDay = isDay;
+
+          function msUntilNextBoundary() {
+            var now = new Date();
+            var next = new Date(now);
+            var h = now.getHours();
+            if (h < 4) {
+              next.setHours(4, 0, 0, 0);
+            } else if (h < 23) {
+              next.setHours(23, 0, 0, 0);
+            } else {
+              next.setDate(next.getDate() + 1);
+              next.setHours(4, 0, 0, 0);
+            }
+            return next.getTime() - now.getTime();
+          }
+
+          function recheck() {
+            var nowIsDay = computeIsDay();
+            if (nowIsDay !== currentIsDay) {
+              currentIsDay = nowIsDay;
+              applyMode(currentIsDay);
+            }
+          }
+
+          function scheduleNextCheck() {
+            // +1s buffer so the check lands just after the boundary,
+            // never a moment before it.
+            window.setTimeout(function () {
+              recheck();
+              scheduleNextCheck();
+            }, msUntilNextBoundary() + 1000);
+          }
+
+          scheduleNextCheck();
+
+          document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) recheck();
+          });
+        }
       })();
     </script>
 
     <!-- Hover hotspots: hidden text reveals only on hover -->
     <div class="hotspot hotspot-works" data-title="Works" data-desc="A look at recent projects and case studies."></div>
-    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do."></div>
+    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do." data-href="about.html"></div>
     <div class="hotspot hotspot-socials-1" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
     <div class="hotspot hotspot-socials-2" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
     <div class="hotspot hotspot-more" data-title="More" data-desc="A few extra bits and links."></div>
@@ -44,12 +125,119 @@
     <div class="hotspot hotspot-coffee" data-title="Buy me a Coffee" data-desc="Support the work with a coffee."></div>
   </main>
 
+  <!-- ================================================================
+       DAY DESKTOP — VISUAL FOUNDATION, matched to the approved Figma
+       reference (terracotta → mauve → periwinkle gradient shader
+       background, text-based widgets). The desktop icons and dock that
+       used to live here were removed in Phase 2.5, to be rebuilt from
+       scratch in a later phase. Still no dragging or window manager.
+       Hidden unless <html data-mode="day">; defaults to hidden, so a
+       scripting failure can never accidentally hide the night UI.
+       ================================================================ -->
+  <div class="desktop desktop--day" id="desktopDay">
+
+    <!-- Full-viewport WebGL background effect (js/day-background.js) —
+         the day desktop's base visual layer, replacing the aurora overlay.
+         Sits below the widgets (z-index), pointer-events
+         disabled. The gradient declared on .desktop--day below stays in
+         the CSS as a fallback: if WebGL is unavailable or the visitor has
+         prefers-reduced-motion on, this canvas hides itself and that
+         gradient is what's seen instead. -->
+    <canvas id="webgl-canvas" class="day-shader-bg" aria-hidden="true"></canvas>
+
+    <!-- Widget cluster (top-right) — real text content in glass cards,
+         styled to match the Figma reference. Placeholder text only;
+         no live weather/time data yet. -->
+    <div class="widget-cluster" id="widgetCluster">
+      <div class="widget widget--weather">
+        <p class="widget-text">It's 3° now in Tokyo. Will be rainy and cold.</p>
+      </div>
+      <div class="widget widget--date">
+        <span class="widget-line widget-line--big">29</span>
+        <span class="widget-line widget-line--small">2024</span>
+      </div>
+      <div class="widget widget--clock">
+        <span class="widget-line widget-line--small">Sun 15</span>
+        <span class="widget-line widget-line--big">22:04</span>
+      </div>
+    </div>
+
+  </div>
+
   <!-- Hover reveal text — follows the cursor -->
   <div class="hover-label" id="hoverLabel">
     <span class="hover-label-title" id="hoverTitle"></span>
     <span class="hover-label-desc" id="hoverDesc"></span>
   </div>
 
+  <!-- Dock (Phase 3.2) — real icons on the structure/magnification
+       foundation from Phase 3.1. Every icon is a .dock-slot picked up
+       generically by js/dock.js (nothing there is hardcoded to a
+       count), grouped into four sets with a .dock-divider between
+       them; dividers use a different class so js/dock.js's
+       querySelectorAll('.dock-slot') skips them automatically and
+       they never magnify. GitHub, LinkedIn and Gmail are real links
+       (recovered from this project's own pre-Phase-2.5 markup, which
+       had them wired up before the old dock was removed); the rest
+       stay non-interactive divs until a later pass adds their links.
+       Shared by both day and night mode: this sits at body level,
+       outside #desktopDay, so it's identical and always visible
+       regardless of data-mode. -->
+  <div class="dock-wrapper" id="dockWrapper">
+    <div class="dock" id="dock">
+
+      <!-- PERSONAL -->
+      <div class="dock-slot" data-dock-slot data-tooltip="About Me">
+        <img src="assets/icons/aboutme.png" alt="About Me" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Readme File">
+        <img src="assets/icons/readme file.png" alt="Readme File" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Resume">
+        <img src="assets/icons/resum.png" alt="Resume" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- PORTFOLIO -->
+      <div class="dock-slot" data-dock-slot data-tooltip="Gallery">
+        <img src="assets/icons/gallery.png" alt="Gallery" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Project Folder">
+        <img src="assets/icons/project folder.png" alt="Project Folder" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- CONTACT & SOCIAL -->
+      <a class="dock-slot" data-dock-slot data-tooltip="Gmail" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=ashhxx8@gmail.com" target="_blank" rel="noopener">
+        <img src="assets/icons/gmail.png" alt="Gmail" class="dock-icon-img" draggable="false">
+      </a>
+      <a class="dock-slot" data-dock-slot data-tooltip="GitHub" href="https://github.com/AnimeshHembram" target="_blank" rel="noopener">
+        <img src="assets/icons/github.png" alt="GitHub" class="dock-icon-img" draggable="false">
+      </a>
+      <a class="dock-slot" data-dock-slot data-tooltip="LinkedIn" href="https://www.linkedin.com/in/animeshhembram07/" target="_blank" rel="noopener">
+        <img src="assets/icons/linkedin.png" alt="LinkedIn" class="dock-icon-img" draggable="false">
+      </a>
+      <div class="dock-slot" data-dock-slot data-tooltip="YouTube">
+        <img src="assets/icons/youtube.png" alt="YouTube" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- OTHERS -->
+      <div class="dock-slot" data-dock-slot data-tooltip="Notes">
+        <img src="assets/icons/notes.png" alt="Notes" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Music">
+        <img src="assets/icons/player.png" alt="Music" class="dock-icon-img" draggable="false">
+      </div>
+
+    </div>
+  </div>
+
   <script src="js/main.js" defer></script>
+  <script src="js/day-background.js" defer></script>
+  <script src="js/dock.js" defer></script>
 </body>
 </html>

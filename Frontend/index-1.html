@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animesh Hembram — Portfolio</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div class="cursor" id="cursor"></div>
+
+  <!-- LOADING PAGE -->
+  <!-- From Uiverse.io by dexter-st -->
+  <div class="loader-screen" id="loaderScreen">
+    <div class="loader-wrapper">
+      <div class="loader"></div>
+    </div>
+  </div>
+
+  <!-- LANDING PAGE -->
+  <main class="landing desktop desktop--night" id="landing">
+    <img alt="" class="landing-image" id="landingImage" />
+    <script>
+      // Day/night image — picked from the visitor's own device clock,
+      // before the browser ever requests an image, so only the right
+      // one is downloaded.
+      //
+      // Confirmed spec: DAY = 04:00–22:59 local time, NIGHT =
+      // 23:00–03:59 local time, switching exactly at 04:00 and 23:00.
+      // Stamps <html data-mode="day|night"> so CSS can key off the mode.
+      //
+      // Live update: if the tab is left open across a 04:00/23:00
+      // boundary, the mode switches on its own — no manual refresh
+      // needed. Implemented as a timer scheduled for the exact next
+      // boundary (self-correcting each run, since it always recomputes
+      // from the real clock rather than just counting elapsed time),
+      // plus a visibilitychange re-check as a safety net for tabs that
+      // were backgrounded long enough for the browser to throttle the
+      // timer.
+      //
+      // For manual testing only: ?mode=day or ?mode=night in the URL
+      // pins the mode and disables the live-update loop entirely, so a
+      // pinned test mode is never overridden by the clock. No override
+      // → behavior is exactly as described above.
+      (function () {
+        var override = new URLSearchParams(window.location.search).get("mode");
+        var landingImage = document.getElementById("landingImage");
+
+        function computeIsDay() {
+          var hour = new Date().getHours();
+          return hour >= 4 && hour < 23; // DAY 04:00–22:59, NIGHT 23:00–03:59
+        }
+
+        function applyMode(isDay) {
+          document.documentElement.setAttribute("data-mode", isDay ? "day" : "night");
+          landingImage.src = isDay
+            ? "assets/images/landing-day.webp"
+            : "assets/images/landing.webp";
+        }
+
+        var isDay = computeIsDay();
+        if (override === "day") isDay = true;
+        if (override === "night") isDay = false;
+        applyMode(isDay);
+
+        if (!override) {
+          var currentIsDay = isDay;
+
+          function msUntilNextBoundary() {
+            var now = new Date();
+            var next = new Date(now);
+            var h = now.getHours();
+            if (h < 4) {
+              next.setHours(4, 0, 0, 0);
+            } else if (h < 23) {
+              next.setHours(23, 0, 0, 0);
+            } else {
+              next.setDate(next.getDate() + 1);
+              next.setHours(4, 0, 0, 0);
+            }
+            return next.getTime() - now.getTime();
+          }
+
+          function recheck() {
+            var nowIsDay = computeIsDay();
+            if (nowIsDay !== currentIsDay) {
+              currentIsDay = nowIsDay;
+              applyMode(currentIsDay);
+            }
+          }
+
+          function scheduleNextCheck() {
+            // +1s buffer so the check lands just after the boundary,
+            // never a moment before it.
+            window.setTimeout(function () {
+              recheck();
+              scheduleNextCheck();
+            }, msUntilNextBoundary() + 1000);
+          }
+
+          scheduleNextCheck();
+
+          document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) recheck();
+          });
+        }
+      })();
+    </script>
+
+    <!-- Hover hotspots: hidden text reveals only on hover -->
+    <div class="hotspot hotspot-works" data-title="Works" data-desc="A look at recent projects and case studies."></div>
+    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do." data-href="about.html"></div>
+    <div class="hotspot hotspot-socials-1" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
+    <div class="hotspot hotspot-socials-2" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
+    <div class="hotspot hotspot-more" data-title="More" data-desc="A few extra bits and links."></div>
+    <div class="hotspot hotspot-music" data-title="Music On/Off" data-desc="Toggle background music."></div>
+    <div class="hotspot hotspot-open-to-work" data-title="Open to work" data-desc="Available for new roles and projects."></div>
+    <div class="hotspot hotspot-coffee" data-title="Buy me a Coffee" data-desc="Support the work with a coffee."></div>
+  </main>
+
+  <!-- ================================================================
+       DAY DESKTOP — VISUAL FOUNDATION, matched to the approved Figma
+       reference (terracotta → mauve → periwinkle gradient, real icon
+       artwork, text-based widgets, full dock). Still no dragging, no
+       window manager, no time-based wallpaper switching — icons and
+       widgets are static for now. Hidden unless <html data-mode="day">;
+       defaults to hidden, so a scripting failure can never accidentally
+       hide the night UI.
+       ================================================================ -->
+  <div class="desktop desktop--day" id="desktopDay">
+
+    <!-- Desktop icon column (top-left) — bare icons directly on the
+         gradient, matching the Figma reference (no glass card behind
+         each one). -->
+    <div class="desktop-icons" id="desktopIcons">
+      <img class="desktop-icon" src="assets/day/projects-icon.png" alt="Projects" />
+      <img class="desktop-icon" src="assets/day/music-bg.png" alt="Music" />
+      <img class="desktop-icon" src="assets/dock/gmail.png" alt="Gmail" />
+      <img class="desktop-icon" src="assets/dock/youtube.png" alt="YouTube" />
+    </div>
+
+    <!-- Widget cluster (top-right) — real text content in glass cards,
+         styled to match the Figma reference. Placeholder text only;
+         no live weather/time data yet. -->
+    <div class="widget-cluster" id="widgetCluster">
+      <div class="widget widget--weather">
+        <p class="widget-text">It's 3° now in Tokyo. Will be rainy and cold.</p>
+      </div>
+      <div class="widget widget--date">
+        <span class="widget-line widget-line--big">29</span>
+        <span class="widget-line widget-line--small">2024</span>
+      </div>
+      <div class="widget widget--clock">
+        <span class="widget-line widget-line--small">Sun 15</span>
+        <span class="widget-line widget-line--big">22:04</span>
+      </div>
+    </div>
+
+    <!-- Day dock — reuses the night dock's exact liquid-glass shell,
+         now widened with the Figma reference's full icon set and text
+         bookends. Gmail/LinkedIn/GitHub/Resume/YouTube reuse the same
+         icon files and the same server-issue toast wiring as night's
+         dock (js/main.js is unchanged and already binds globally). -->
+    <div class="dock-wrapper dock-wrapper--day">
+      <div class="liquidGlass-wrapper dock dock--day">
+        <div class="liquidGlass-effect"></div>
+        <div class="liquidGlass-tint"></div>
+        <div class="liquidGlass-shine"></div>
+        <div class="liquidGlass-text">
+          <div class="dock">
+            <span class="dock-label">home.</span>
+            <img class="dock-icon-img" src="assets/day/news-icon.png" alt="News" />
+            <img class="dock-icon-img" src="assets/day/weather-time-icon.png" alt="New York time" />
+            <img class="dock-icon-img" src="assets/day/projects-icon.png" alt="Projects folder" />
+            <img class="dock-icon-img" src="assets/day/gallery-icon.png" alt="Gallery folder" />
+            <img class="dock-icon-img" src="assets/day/about-me-icon.png" alt="About Me" />
+
+            <a class="dock-icon" href="https://mail.google.com/mail/?view=cm&fs=1&to=ashhxx8@gmail.com" target="_blank" rel="noopener">
+              <img src="assets/dock/gmail.png" alt="Email me on Gmail" />
+            </a>
+            <a class="dock-icon" href="https://www.linkedin.com/in/animeshhembram07/" target="_blank" rel="noopener">
+              <img src="assets/dock/linkedin.png" alt="LinkedIn" />
+            </a>
+            <a class="dock-icon" href="https://github.com/AnimeshHembram" target="_blank" rel="noopener">
+              <img src="assets/dock/github.png" alt="GitHub" />
+            </a>
+            <button type="button" class="dock-icon dock-icon-btn" data-dock-action="server-issue" aria-label="Resume">
+              <img src="assets/dock/resume.png" alt="Resume" />
+            </button>
+            <button type="button" class="dock-icon dock-icon-btn" data-dock-action="server-issue" aria-label="YouTube">
+              <img src="assets/dock/youtube.png" alt="YouTube" />
+            </button>
+
+            <span class="dock-label">more.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hover reveal text — follows the cursor -->
+  <div class="hover-label" id="hoverLabel">
+    <span class="hover-label-title" id="hoverTitle"></span>
+    <span class="hover-label-desc" id="hoverDesc"></span>
+  </div>
+
+  <!-- Dock — liquid glass effect, from lucasromerodb/liquid-glass-effect-macos -->
+  <div class="dock-wrapper">
+    <div class="liquidGlass-wrapper dock">
+      <div class="liquidGlass-effect"></div>
+      <div class="liquidGlass-tint"></div>
+      <div class="liquidGlass-shine"></div>
+      <div class="liquidGlass-text">
+        <div class="dock">
+          <img src="assets/dock/map.png" alt="Maps" />
+          <img src="assets/dock/messages.png" alt="Messages" />
+          <img src="assets/dock/notes.png" alt="Notes" />
+          <img src="assets/dock/books.png" alt="Books" />
+
+          <span class="dock-divider" aria-hidden="true"></span>
+
+          <a class="dock-icon" href="https://mail.google.com/mail/?view=cm&fs=1&to=ashhxx8@gmail.com" target="_blank" rel="noopener">
+            <img src="assets/dock/gmail.png" alt="Email me on Gmail" />
+          </a>
+          <a class="dock-icon" href="https://www.linkedin.com/in/animeshhembram07/" target="_blank" rel="noopener">
+            <img src="assets/dock/linkedin.png" alt="LinkedIn" />
+          </a>
+          <a class="dock-icon" href="https://github.com/AnimeshHembram" target="_blank" rel="noopener">
+            <img src="assets/dock/github.png" alt="GitHub" />
+          </a>
+          <button type="button" class="dock-icon dock-icon-btn" data-dock-action="server-issue" aria-label="Resume">
+            <img src="assets/dock/resume.png" alt="Resume" />
+          </button>
+          <button type="button" class="dock-icon dock-icon-btn" data-dock-action="server-issue" aria-label="YouTube">
+            <img src="assets/dock/youtube.png" alt="YouTube" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dock toast — placeholder feedback for Resume / YouTube -->
+  <div class="dock-toast" id="dockToast" role="status" aria-live="polite"></div>
+
+  <svg style="display: none">
+    <filter
+      id="glass-distortion"
+      x="0%"
+      y="0%"
+      width="100%"
+      height="100%"
+      filterUnits="objectBoundingBox"
+    >
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.01 0.01"
+        numOctaves="1"
+        seed="5"
+        result="turbulence"
+      />
+      <feComponentTransfer in="turbulence" result="mapped">
+        <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+        <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+        <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+      </feComponentTransfer>
+      <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+      <feSpecularLighting
+        in="softMap"
+        surfaceScale="5"
+        specularConstant="1"
+        specularExponent="100"
+        lighting-color="white"
+        result="specLight"
+      >
+        <fePointLight x="-200" y="-200" z="300" />
+      </feSpecularLighting>
+      <feComposite
+        in="specLight"
+        operator="arithmetic"
+        k1="0"
+        k2="1"
+        k3="1"
+        k4="0"
+        result="litImage"
+      />
+      <feDisplacementMap
+        in="SourceGraphic"
+        in2="softMap"
+        scale="150"
+        xChannelSelector="R"
+        yChannelSelector="G"
+      />
+    </filter>
+  </svg>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
