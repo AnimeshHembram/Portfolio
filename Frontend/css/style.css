@@ -5,9 +5,8 @@
 :root {
   /* Dock glass tokens (Phase 3.1) — shared by both day and night mode,
      since the dock sits at body level rather than inside .desktop--day.
-     Values echo the day widgets' glass look (--day-glass-blur/-shadow,
-     --day-widget-fill/-border below) so the dock reads as the same
-     visual language, without depending on tokens scoped to day mode. */
+     Kept independent of any day-mode-scoped tokens so the dock's glass
+     look never depends on what else exists in day mode. */
   --dock-glass-fill: rgba(20, 20, 30, 0.45);
   --dock-glass-border: rgba(255, 255, 255, 0.18);
   --dock-glass-blur: blur(16px);
@@ -397,19 +396,6 @@ body {
   --day-bg-mid: #98658d;
   --day-bg-bottom: #6f8df5;
 
-  /* Glass tokens — shared by the widget cards below. (--day-glass-fill
-     and --day-glass-border used to also feed the day dock's glass
-     shell; removed in Phase 2.5 along with the dock itself.) */
-  --day-glass-blur: blur(16px);
-  --day-glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-
-  /* Widget tokens — darker glass chips, matching the Figma reference's
-     weather/date/clock widgets */
-  --day-widget-fill: rgba(20, 20, 30, 0.45);
-  --day-widget-border: rgba(255, 255, 255, 0.16);
-  --day-widget-text: #fff;
-  --day-widget-text-dim: rgba(255, 255, 255, 0.65);
-
   position: relative;
   width: 100%;
   height: 100vh;
@@ -422,71 +408,16 @@ body {
   );
 }
 
-/* ---------------- Widget cluster (top-right) ---------------- */
-/* Real text content in dark glass cards, matching the Figma
-   reference's weather/date/clock chips. Placeholder copy only — no
-   live weather/time data source is wired up yet. */
-.widget-cluster {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  z-index: 40;
-  display: flex;
-  gap: 8px;
-}
-
-.widget {
-  width: 64px;
-  min-height: 64px;
-  border-radius: 14px;
-  background: var(--day-widget-fill);
-  border: 1px solid var(--day-widget-border);
-  backdrop-filter: var(--day-glass-blur);
-  -webkit-backdrop-filter: var(--day-glass-blur);
-  box-shadow: var(--day-glass-shadow);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: var(--day-widget-text);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.widget--weather {
-  width: 84px;
-}
-
-.widget-text {
-  margin: 0;
-  font-size: 0.58rem;
-  line-height: 1.25;
-  color: var(--day-widget-text);
-}
-
-.widget-line {
-  display: block;
-  width: 100%;
-}
-
-.widget-line--big {
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.widget-line--small {
-  font-size: 0.55rem;
-  color: var(--day-widget-text-dim);
-  letter-spacing: 0.02em;
-}
+/* Widget cluster (weather/date/clock, top-right) removed at the user's
+   request — it and its day-glass and day-widget custom-property tokens,
+   its .widget rules, and its dedicated responsive tiers all lived only
+   here and are gone together, cleanly, rather than left as unused dead
+   CSS. */
 
 /* ---------------- Day background shader (js/day-background.js) ---------------- */
 /* Full-viewport WebGL canvas — the day desktop's base visual layer,
-   replacing the earlier morning-aurora overlay. z-index 0 puts it below
-   the widgets (z-index 40) but it still paints over the
+   replacing the earlier morning-aurora overlay. z-index 0, pointer-events
+   disabled, so it never blocks a click. It still paints over the
    .desktop--day gradient below, which is kept in the CSS purely as the
    fallback shown when WebGL is unavailable or prefers-reduced-motion is
    on (js/day-background.js hides this canvas in both cases).
@@ -510,55 +441,6 @@ body {
    plus a custom image cursor here, both removed so day and night render
    identically. */
 
-/* ---------------- Responsive tiers ---------------- */
-@media (max-width: 900px) {
-  .widget-cluster {
-    top: 1.25rem;
-    right: 1.25rem;
-    gap: 6px;
-  }
-  .widget {
-    width: 52px;
-    min-height: 52px;
-    padding: 5px;
-  }
-  .widget--weather {
-    width: 70px;
-  }
-  .widget-text {
-    font-size: 0.5rem;
-  }
-  .widget-line--big {
-    font-size: 0.95rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .widget-cluster {
-    gap: 5px;
-  }
-  .widget {
-    width: 44px;
-    min-height: 44px;
-  }
-  .widget--weather {
-    width: 58px;
-  }
-}
-
-@media (max-width: 420px) {
-  .widget {
-    width: 38px;
-    min-height: 38px;
-  }
-  .widget--weather {
-    width: 50px;
-  }
-  .widget-text {
-    font-size: 0.42rem;
-  }
-}
-
 /* ================================================================
    DOCK — REAL ICONS + MAGNIFICATION (Phase 3.2, on the Phase 3.1
    structure)
@@ -571,9 +453,26 @@ body {
    (dividers are a separate class and are never touched by JS).
    ================================================================ */
 
-/* Fixed, horizontally centered at the bottom of the viewport. z-index
-   40 matches the widget cluster's stacking tier — same priority, no
-   spatial overlap (widgets are top-right, this is bottom-center).
+/* Hover/focus catch zone (Phase 3.3) — a fixed strip spanning the full
+   viewport width, from the very bottom edge up past the dock's resting
+   position. js/dock.js binds its show/hide listeners to this element,
+   not to the dock itself, so that the "hotspot" area below the dock
+   and the dock itself are one continuous hoverable region: crossing
+   between them never fires a leave/re-enter, which is what keeps the
+   reveal from flickering. It sits at the same z-index tier as the
+   dock it contains; its height is just tall enough to comfortably
+   contain the dock (including its reveal-slide offset) at each
+   breakpoint, defined alongside the dock's own breakpoints below. */
+.dock-hover-zone {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 130px;
+  z-index: 40;
+}
+
+/* Fixed, horizontally centered at the bottom of the viewport.
    Sits below .hover-label (60), .loader-screen (100, temporary on
    load) and .cursor (9999); above the day shader background (0). */
 .dock-wrapper {
@@ -703,7 +602,308 @@ body {
   }
 }
 
+/* ---------------- Dock "Switch" button (index.html only) ----------------
+   Adapted from a Uiverse.io "Liquid" gradient-button component the user
+   supplied verbatim (layered rotating radial-gradient divs blended with
+   color-dodge/difference/multiply, a soft pulsing highlight, a text
+   label and a text-overlay sitting on top of it for the raised/glossy
+   look). The mechanism is kept exactly as given; every dimension that
+   was originally a fixed px/rem value (sized for a ~200px pill button)
+   is converted to a percentage of this element's own box instead, so
+   the whole thing scales down cleanly to the same box a normal dock
+   icon uses (40/34/26/20px across the existing breakpoints below)
+   rather than being clipped or mis-positioned at icon scale. Click
+   behavior (the actual day/night toggle) is wired in index.html's own
+   inline script, right next to the mode logic it drives — day.html and
+   night.html don't get this slot at all, since they're static,
+   single-mode previews with no clock logic to toggle.
+   .dock-slot itself supplies the sizing/position/magnify/tooltip
+   plumbing already shared by every other icon (js/dock.js is
+   completely unchanged); only its contents are custom here. */
+.dock-slot--switch {
+  isolation: isolate;
+}
+
+.dock-slot--switch .btn-wrapper {
+  --rad: 34%;
+  --color-wrapper-border: rgba(255, 255, 255, 0.85);
+  --color-btn-bg: #f00;
+  --color-btn-text: #000;
+  --color-btn-text-shadow: #fff;
+  --color-btn-inset-shadow: #558;
+  --color-layer-a: #fff;
+  --color-layer-b: #00f;
+  --color-overlay-text: #000;
+  --color-overlay-glow: #fff;
+  --color-overlay-shadow: #0004;
+  --color-overlay-highlight: #fff5;
+
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: clip;
+
+  border: 1.5px solid var(--color-wrapper-border);
+  border-radius: var(--rad);
+
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+
+  filter: saturate(0.65) brightness(1.8);
+}
+
+.dock-slot--switch .gradient-btn {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  border: none;
+  border-radius: var(--rad);
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0.02em;
+
+  color: var(--color-btn-text);
+  background-color: var(--color-btn-bg);
+  background-size: 200% 200%;
+  box-shadow: inset 0 0 4px 3px var(--color-btn-inset-shadow);
+  text-shadow: 0 1px 1px var(--color-btn-text-shadow);
+
+  cursor: pointer;
+  mix-blend-mode: color-dodge;
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+}
+
+.dock-slot--switch .gradient-btn::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+
+  border-radius: var(--rad);
+  background-size: 200% 200%;
+  mix-blend-mode: difference;
+  z-index: 1;
+}
+
+.dock-slot--switch .gradient-layer {
+  position: absolute;
+  pointer-events: none;
+
+  left: -80%;
+  top: 0;
+  width: 500%;
+  aspect-ratio: 1;
+
+  background: radial-gradient(
+    ellipse at 65% 180%,
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a)
+  );
+
+  mix-blend-mode: difference;
+  animation: dock-switch-rotate 8s linear infinite;
+}
+
+.dock-slot--switch .gradient-layer:last-child {
+  mix-blend-mode: color-dodge;
+}
+
+@keyframes dock-switch-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.dock-slot--switch .text-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: var(--rad);
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0.02em;
+
+  color: var(--color-overlay-text);
+  text-shadow: 0 0 2px var(--color-overlay-glow);
+  box-shadow:
+    inset 0 -2px 2px 0 var(--color-overlay-shadow),
+    inset 0 2px 2px 0 var(--color-overlay-highlight);
+
+  mix-blend-mode: multiply;
+  transition: transform 0.3s ease;
+  animation: dock-switch-opacity-pulse 5s ease infinite;
+}
+
+.dock-slot--switch:hover .text-overlay,
+.dock-slot--switch:focus-within .text-overlay {
+  transform: scale(1.08);
+}
+
+.dock-slot--switch:hover .gradient-btn,
+.dock-slot--switch:focus-within .gradient-btn {
+  color: #0000;
+  text-shadow: 0 0 0 #0000;
+}
+
+.dock-slot--switch:active .text-overlay {
+  transform: scale(0.92);
+}
+
+.dock-slot--switch .light {
+  position: absolute;
+  pointer-events: none;
+  left: 10%;
+  top: 14%;
+  z-index: 1;
+  border-radius: 50px;
+  width: 80%;
+  height: 22%;
+  background-color: #fff5;
+  filter: blur(2px);
+  animation: dock-switch-pulse 3s ease-in-out infinite;
+}
+
+@keyframes dock-switch-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.1;
+  }
+}
+
+@keyframes dock-switch-opacity-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.dock-slot--switch .gradient-btn,
+.dock-slot--switch .text-overlay {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @media (max-width: 900px) {
+  .dock-slot--switch .btn-wrapper {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dock-slot--switch .btn-wrapper {
+    font-size: 6px;
+    border-width: 1px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dock-slot--switch .btn-wrapper {
+    font-size: 5px;
+    border-width: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-slot--switch .gradient-layer,
+  .dock-slot--switch .light,
+  .dock-slot--switch .text-overlay {
+    animation: none;
+  }
+}
+
+/* ---------------- Night-mode hidden dock + cinematic reveal (Phase 3.3) ----------------
+   Hidden by default, revealed by approaching the bottom edge. Scoped
+   two ways so nothing else regresses:
+   - @media (hover: hover) — only devices with a real pointer get this
+     at all. Touch has no hover state to trigger a reveal with, so a
+     hidden-by-default dock there would be permanently unreachable;
+     touch devices simply never get this rule and keep the dock
+     always visible, same as before.
+   - [data-mode="night"] — day mode's dock is completely untouched by
+     this block and keeps its original always-visible behavior. Since
+     this keys off the live data-mode attribute (not a JS-cached
+     value), it also self-corrects automatically at the exact moment
+     the site's day/night boundary timer flips data-mode, with no
+     extra code needed here.
+   Only opacity/transform are animated (GPU-composited, no layout
+   thrash) and #dockHoverZone's own box never moves — only its
+   .dock-visible class (toggled by js/dock.js's show/hide state
+   machine) and :focus-within (a pure-CSS fallback for keyboard
+   access, independent of JS) switch between these two states. */
+@media (hover: hover) {
+  [data-mode="night"] .dock-wrapper {
+    opacity: 0;
+    transform: translateX(-50%) translateY(24px);
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-mode="night"] .dock-hover-zone.dock-visible .dock-wrapper,
+  [data-mode="night"] .dock-hover-zone:focus-within .dock-wrapper {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Reduced motion: keep the show/hide behavior, drop the slide/fade
+     animation — same convention as the magnification code's own
+     prefers-reduced-motion bailout in js/dock.js. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-mode="night"] .dock-wrapper {
+      transition: none;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .dock-hover-zone {
+    height: 110px;
+  }
   .dock-wrapper {
     bottom: 1.25rem;
   }
@@ -721,6 +921,9 @@ body {
 }
 
 @media (max-width: 640px) {
+  .dock-hover-zone {
+    height: 95px;
+  }
   .dock-wrapper {
     bottom: 1rem;
   }
@@ -738,6 +941,9 @@ body {
 }
 
 @media (max-width: 420px) {
+  .dock-hover-zone {
+    height: 85px;
+  }
   .dock {
     gap: 4px;
     padding: 5px 8px;

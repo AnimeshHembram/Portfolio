@@ -6,335 +6,1400 @@
 <title>About — Animesh Hembram</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;0,800;1,700&family=Pixelify+Sans:wght@700&family=Italianno&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,700;0,900;1,700&display=swap" rel="stylesheet" />
 <style>
-  /* =============== Design tokens (from Figma: Portfolio Website, node 61:76) =============== */
-  :root {
-    --color-bg: #e5dede;
-    --color-text: #000000;
-    --color-link: #0834a4;
+  /* =====================================================================
+     About page — white page, a headline (currently: "design" only — see
+     DESIGN HEADLINE note), an intro paragraph, and a 4-image gallery row.
 
-    --font-nav: 'Inter', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    --font-design: 'Inter', sans-serif;
-    --font-tech: 'Pixelify Sans', monospace;
-    --font-story: 'Italianno', cursive;
+     FONT NOTE: the brief asked for "Inter Display" specifically. That is
+     not a font Google Fonts actually serves as its own family — it's a
+     long-standing open feature request (google/fonts#7115, still
+     unresolved). Figma splits the variable Inter font into "Inter" /
+     "Inter Display" entries internally, but the web-servable family is
+     just "Inter", which is also what the rest of this site already uses.
+     Using regular "Inter" here is the closest faithful match without a
+     substitute typeface.
 
-    --fs-nav: 1.40625rem;   /* 22.5px */
-    --fs-name: 1.5rem;      /* 24px */
-    --fs-tagline: 1.5rem;   /* 24px */
-    --fs-pillar: 3rem;      /* 48px */
-    --fs-body: 1.5rem;      /* 24px */
+     IMAGE NOTE: the four gallery photos in the reference (car, cheetah
+     fur + bracelet, macaw + ring, sneaker) don't exist anywhere in this
+     project's assets — confirmed by checking every assets subfolder
+     before writing this file. Per your direction, these are neutral,
+     clearly-labeled placeholder blocks at the exact size/position/order
+     the reference uses, ready to swap for real photos later (just
+     replace each .gallery-ph div with an <img>).
 
-    --space-page-x: 4.78125rem; /* 76.5px */
-    --space-page-top: 2.65rem;  /* 42.4px */
+     OVERFLOW FIX: sizes on this page scale off the CONTAINER's width via
+     CSS container queries (cqw) rather than plain vw units (which have
+     no ceiling and can overflow on a wide real monitor), and the
+     container itself is capped with max-width — so past 1200px of
+     available width, the extra space just becomes side margin instead
+     of stretching content further. .about-copy's font-size and
+     .about-gallery's gap still rely on this, which is why
+     container-type: inline-size stays on .about-stage even with the
+     headline gone.
 
-    --gap-logo-name: 5.15625rem;  /* 82.5px */
-    --gap-name-tagline: 1.1rem;   /* 17.6px */
-    --gap-tagline-pillars: 1.08rem; /* 17.3px */
-    --gap-pillars-body: 1.6rem;   /* 25.5px */
-    --gap-body-footer: 8.6rem;    /* 137.6px */
+     DESIGN HEADLINE (Step 1 of 3 — Tech and Storytelling come later, as
+     their own separate steps, per your instruction): the empty headline
+     area is now filled with an interactive canvas text effect for the
+     word "Design", ported from the React component you supplied
+     (referred to in that component's own code/demo as "TechText") to
+     plain vanilla JS, since this project has no build step or framework
+     for JSX/hooks to run through. The port keeps every piece of the
+     original's drawing and interaction logic unchanged — sprite-based
+     glyph rendering, a cursor/auto-sweep spotlight reveal, spring-damper
+     physics for letter drag-and-release, a corner-handle selection frame
+     with a live label, and perimeter "specks" particles — only the
+     React-specific plumbing (hooks, refs, JSX, prop re-render sync) is
+     replaced with a plain config object and direct DOM lookups, and the
+     horizontal layout (see ensureLayout() in the script) is left-aligned
+     to match the intro paragraph's left edge instead of the original
+     component's default center alignment. The full ported script is
+     inline in the <script> tag near the end of <body>.
 
-    --logo-width: 33.9rem;   /* 542px */
-    --pencil-w: 17rem;       /* 272px */
-    --pencil-h: 2.9rem;      /* 46.5px */
-    --crt-w: 6.14rem;        /* 98px */
-    --crt-h: 5.6rem;         /* 89.6px */
-    --tape-w: 9.68rem;       /* 155px */
-    --resume-h: 5.625rem;    /* 90px */
+     One parameter differs from the component's own default demo props:
+       - color / accentColor: #ff0000 instead of the demo's white — this
+         is NOT an arbitrary substitute. It's the exact red this same
+         "design" word already used in the headline before it was
+         removed (.design-word had color: #ff0000), so the new effect
+         matches the page's own established headline color rather than
+         introducing a new one.
+     text is "Design" (capital D), per your instruction. Every other prop
+     (fontSize 150, fontWeight 600, letterSpacing -0.05, reach 200,
+     softness 0.7, dashLength 4, dashGap 2, strokeWidth 1.5, lineStyle
+     "dashed", reveal "letter", specks 15, selection/labels/draggable/
+     sweep all on, speed 1) is exactly what you supplied.
 
-    --nav-collapse-bp: 1024px;
-    --mobile-bp: 768px;
-  }
+     Sizing: the component auto-fits its text to whatever box it's given
+     (fit = min(1, 0.9×width/inkWidth, 0.66×height/inkHeight) — capped by
+     whichever of the box's width or height is tighter). The box it had
+     right after headline removal was far too short for "design" to
+     reach anywhere near its configured 150px size, so — per your choice
+     to give it more room rather than let it render small — .about-headline
+     now has an explicit height instead of the old min-height. See the
+     comment on that rule below for how the value was derived; the
+     tradeoff you accepted is that the paragraph and gallery now sit
+     somewhat lower than before, since this headline is visibly taller
+     than empty space was.
+     ===================================================================== */
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-
-  html { font-size: 16px; }
-  @media (max-width: 1024px) { html { font-size: 11.4px; } }
-  @media (max-width: 768px)  { html { font-size: 9px; } }
-
-  body {
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: var(--font-body);
-    min-height: 100vh;
-    padding: var(--space-page-top) var(--space-page-x) 3rem;
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    overflow-x: hidden;
   }
-
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #000000;
+  }
   a { color: inherit; text-decoration: none; }
 
-  /* =============== Header / Nav =============== */
+  .about-stage {
+    container-type: inline-size;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 6.5vw 6.5% 4rem;
+  }
+  /* Once the viewport is wide enough that .about-stage has hit its
+     1200px cap, further growth of the window no longer changes the
+     stage's own width — so vw-based outer padding above is harmless
+     (it only affects space OUTSIDE the capped stage would if used
+     inside; here it's fine as page-level top breathing room) while
+     every size below keyed to cqw is what actually stays bounded. */
 
-  .about-header {
+  /* ---------- Headline area: "design" canvas text effect, see DESIGN
+     HEADLINE note above. Height is a clamp() so the canvas host is tall
+     enough for the component's own auto-fit to render "design" at its
+     full configured 150px size wherever there's room, while shrinking
+     together with width on narrow screens instead of leaving dead space
+     below a fixed-size box. Solved empirically (rendered the ported
+     script with Playwright at a grid of widths/heights and measured the
+     actual drawn ink with pixel analysis, since this sandbox can't load
+     Google Fonts and needed to verify against the real fallback font it
+     was rendering, not hand math alone):
+       - 44.6cqw is the height, as a fraction of this element's own
+         cqw-width, at which the width-based and height-based halves of
+         the component's own fit formula come out equal for the word
+         "design" — i.e. the height that uses exactly as much of the box
+         as the width does, at any box size, so neither dimension is
+         ever the wasteful one.
+       - capped at 14.375rem (~230px): past that, more height stops
+         helping because the component has already reached its full
+         150px configured size (measured plateau ~214px; the extra ~16px
+         is margin for real Inter's glyph metrics differing slightly from
+         the fallback sans-serif this sandbox renders with).
+       - floored at 6.25rem so no realistic viewport width collapses the
+         box to near-zero.
+     Verified with the real ported script across 1920px→320px, in the
+     real .about-stage/.about-headline DOM structure: the effect reaches
+     its full 150px size at every width from ~600px up, scales down
+     smoothly and without overflow below that, and the paragraph/gallery
+     below shift down by exactly this box's height with no other layout
+     regressions.
+
+     TECH HANDOFF (Step 2 of 3): after 1 minute the headline switches from
+     "design" to "tech" (Storytelling stays for its own later step). Both
+     words' hosts now sit stacked in this same box via position: relative
+     here + position: absolute on each pane (see .headline-pane below),
+     so switching which one is visible never changes this element's own
+     height/position — the height clamp above (sized for "design") is
+     unchanged and untouched, exactly as instructed.
+
+     STORYTELLING (Step 3 of 3): a third pane stacks in the same box the
+     same way. "Storytelling" is measured at ~735px wide at the shared
+     150px/600-weight/-0.05em styling "Design" and "tech" both use — wider
+     than this box ever is below roughly 840px of viewport width (e.g.
+     668px available at a 768px viewport, 422px at 480px), so keeping that
+     exact fixed size here would either overflow the box or force it
+     wider, both against your instructions. You confirmed (asked directly,
+     since this was a genuine conflict between "same font size" and "no
+     overflow/no layout shift") that Storytelling should instead auto-
+     shrink to fit — the same fit-to-box philosophy "design"'s own canvas
+     already uses above, just applied to this DOM-text pane: see the
+     STORYTELLING BLUR note in <script> for exactly how. */
+  .about-headline {
     position: relative;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
+    height: clamp(6.25rem, 44.6cqw, 14.375rem);
   }
 
-  .about-header__home {
-    font-family: var(--font-nav);
-    font-weight: 800;
-    font-size: var(--fs-nav);
-    color: var(--color-text);
-  }
-  .about-header__home:hover { opacity: 0.65; }
+  /* ---------- Headline pane switching: both the "design" canvas host and
+     the "tech" decrypt host occupy the exact same box (position: absolute;
+     inset: 0 inside the now relatively-positioned .about-headline), so
+     only one is ever visible at a time and swapping which one never
+     shifts anything else on the page.
 
-  .about-header__toggle {
-    display: none;
-    width: 2.2rem;
-    height: 2.2rem;
-    padding: 0;
-    border: 2px solid var(--color-text);
-    border-radius: 4px;
-    background: transparent;
-    position: relative;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .about-header__toggle-bar,
-  .about-header__toggle-bar::before,
-  .about-header__toggle-bar::after {
+     FIX (tech's animation wasn't visible): this rule originally faded
+     opacity in over 600ms on every switch. "design"'s sweep is a
+     continuous idle loop, so a fade-in never hid anything meaningful
+     there — but "tech"'s decrypt reveal is a short, one-shot animation
+     that finishes in ~200ms (4 letters × 50ms), and it started at the
+     same moment the fade did. For roughly the first third of that fade
+     the pane was still at very low opacity, and the whole letter-by-
+     letter reveal had already finished underneath it by the time the
+     pane became visible enough to see anything happening — so all that
+     ever showed up was the plain, fully-solved "tech" quietly fading in,
+     never the scramble. That fade was my own addition on top of your
+     component (it isn't part of the code you sent), so removing it here
+     — an instant, hard cut between panes — is the fix, not a
+     replacement animation: it makes your actual decrypt reveal the only
+     motion visible during the switch, exactly as your code produces it. */
+  .headline-pane {
     position: absolute;
-    left: 20%;
-    width: 60%;
-    height: 2px;
-    background: var(--color-text);
-    transition: transform 0.25s ease, opacity 0.25s ease, top 0.25s ease;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
   }
-  .about-header__toggle-bar { top: 50%; transform: translateY(-50%); }
-  .about-header__toggle-bar::before { content: ""; top: -0.55rem; }
-  .about-header__toggle-bar::after { content: ""; top: 0.55rem; }
-  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar { background: transparent; }
-  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar::before {
-    top: 0; transform: rotate(45deg);
-  }
-  .about-header__toggle[aria-expanded="true"] .about-header__toggle-bar::after {
-    top: 0; transform: rotate(-45deg);
+  .headline-pane.is-active {
+    opacity: 1;
+    pointer-events: auto;
   }
 
-  .about-header__nav {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.2rem;
-    text-align: right;
+  /* ---------- "design" canvas text effect: host + canvas wiring.
+     NOTE: the original component's own CSS file was pasted several turns
+     before this session hit a context-compaction boundary, and its exact
+     text did not survive into the continued session — it could not be
+     recovered. The rules below are the minimal wiring this kind of
+     full-bleed interactive canvas needs (a canvas filling its host edge
+     to edge, and text-selection/touch-scroll disabled on the host since
+     the component implements its own letter-drag instead), reconstructed
+     from how the script actually uses the DOM — not invented visual
+     styling. Flagged for your confirmation/replacement if you still have
+     the original file. Positioning (position/width/height) now comes from
+     the shared .headline-pane rule above instead of being set here, so
+     this host can be stacked with the "tech" pane in the same box. */
+  .tech-text {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
-
-  .about-header__nav-link {
-    font-family: var(--font-nav);
-    font-weight: 800;
-    font-size: var(--fs-nav);
-    color: var(--color-link);
-    line-height: 1.35;
-  }
-  .about-header__nav-link:hover { opacity: 0.7; text-decoration: underline; }
-
-  /* Tablet + mobile: hamburger nav */
-  @media (max-width: 1024px) {
-    .about-header__toggle { display: block; }
-
-    .about-header__nav {
-      position: absolute;
-      top: calc(100% + 0.75rem);
-      right: 0;
-      align-items: flex-end;
-      gap: 0.6rem;
-      background: var(--color-bg);
-      max-height: 0;
-      overflow: hidden;
-      opacity: 0;
-      transition: max-height 0.3s ease, opacity 0.25s ease;
-      z-index: 10;
-    }
-    .about-header__nav--open {
-      max-height: 20rem;
-      opacity: 1;
-    }
-  }
-
-  /* =============== Main content =============== */
-
-  .about-main {
-    padding-top: 0;
-  }
-
-  .about-main__logo {
+  .tech-text-canvas {
     display: block;
-    width: var(--logo-width);
-    max-width: 100%;
-    height: auto;
-    margin: 0 0 var(--gap-logo-name);
+    width: 100%;
+    height: 100%;
   }
 
-  .about-main__name {
-    margin: 0 0 var(--gap-name-tagline);
-    font-size: var(--fs-name);
-    font-weight: 400;
-  }
-  .about-main__name strong { font-weight: 700; }
-
-  .about-main__tagline {
-    margin: 0 0 var(--gap-tagline-pillars);
-    font-size: var(--fs-tagline);
-    font-weight: 400;
-    line-height: 1.2;
-  }
-
-  .about-main__pillars {
+  /* ---------- "tech" decrypt/scramble text effect: host + character
+     styling, ported from the supplied React DecryptedText component (see
+     the TECH DECRYPT note in <script> below for exactly which of its
+     modes this uses and why). Sized and spaced to match "design"'s own
+     established look instead of introducing a new one, per your
+     instruction not to change the headline's font size, family, weight,
+     color, alignment, or spacing when the text changes:
+       - font-size: the "design" canvas auto-fits up to a configured
+         150px, reaching that plateau once .about-headline's own height
+         clamp (above) reaches ~210px, and scaling down linearly with it
+         below that. This clamp is that same curve, solved directly from
+         it (150 × each breakpoint of the height clamp ÷ 210, the
+         measured plateau height) rather than a separately-guessed value,
+         so "tech" renders at essentially the same size "design" did at
+         any given width: clamp(6.25rem×150/210, 44.6cqw×150/210,
+         150px) = clamp(4.464rem, 31.857cqw, 9.375rem).
+       - font-weight 600, letter-spacing -0.05em, color #ff0000, and the
+         page's own Inter/sans-serif stack all copy "design"'s canvas
+         config (fontWeight 600, letterSpacing -0.05, color #ff0000)
+         exactly, so the two words read as the same headline typeface,
+         not two different ones.
+       - flush-left + vertically centered within the box, matching
+         "design"'s own current flush-left/centered layout (see the
+         earlier alignment-correction and pixel-line-visibility fixes
+         above/in-script) — no separate alignment decision was made here.
+     Two span classes distinguish the transient scrambled state from the
+     settled one; this is the only genuinely new visual choice here (the
+     original component leaves this entirely to caller CSS), kept simple:
+     scrambled characters render dimmer, revealed ones at full "design"
+     red, so the decrypt reads clearly without introducing a second
+     color. */
+  .tech-decrypt {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin: 0 0 var(--gap-pillars-body);
-  }
-
-  .about-main__pillar {
-    white-space: nowrap;
-    font-size: var(--fs-pillar);
+    justify-content: flex-start;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: clamp(4.464rem, 31.857cqw, 9.375rem);
+    letter-spacing: -0.05em;
     line-height: 1;
+    white-space: nowrap;
   }
-  .about-main__pillar--design {
-    font-family: var(--font-design);
-    font-weight: 700;
+  .tech-decrypt-encrypted {
+    color: rgba(255, 0, 0, 0.4);
   }
-  .about-main__pillar--tech {
-    font-family: var(--font-tech);
-    font-weight: 700;
-  }
-  .about-main__pillar--story {
-    font-family: var(--font-story);
-    font-weight: 400;
+  .tech-decrypt-revealed {
+    color: #ff0000;
   }
 
-  .about-main__icon { height: auto; display: block; }
-  .about-main__icon--pencil {
-    width: var(--pencil-w);
-    aspect-ratio: 724 / 124;
-    object-fit: cover;
-  }
-  .about-main__icon--crt {
-    width: var(--crt-w);
-    height: var(--crt-h);
-    object-fit: cover;
-  }
-
-  .about-main__description {
-    max-width: 64rem;
-    margin: 0;
-    font-size: var(--fs-body);
-    font-weight: 400;
-    line-height: 1.6;
-  }
-  .about-main__description em {
-    font-family: var(--font-body);
-    font-weight: 700;
-    font-style: italic;
-  }
-
-  /* =============== Footer =============== */
-
-  .about-footer {
+  /* ---------- "Storytelling" blur-reveal text effect: host + letter
+     styling, ported from the supplied React BlurText component (see the
+     STORYTELLING BLUR note in <script> below for the animation timing
+     and the animateBy:'letters' choice). Family/weight/letter-spacing/
+     color all copy "design"/"tech" exactly, same reasoning as
+     .tech-decrypt above — one headline typeface throughout.
+       - font-size is NOT a fixed value here (unlike .tech-decrypt's
+         clamp): it's set directly by JS (layoutStorytelling() in
+         <script>), because this word specifically needs to shrink below
+         "design"/"tech"'s shared size on narrower screens to avoid
+         overflowing the box — see the STORYTELLING comment in <style>
+         above. Flush-left + vertically centered, matching both other
+         words' layout. */
+  .storytelling-blur {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-top: var(--gap-body-footer);
+    align-items: center;
+    justify-content: flex-start;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    color: #ff0000;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .storytelling-letter {
+    display: inline-block;
+    will-change: transform, filter, opacity;
   }
 
-  .about-footer__tape {
-    display: block;
-    width: var(--tape-w);
-    height: auto;
+  /* ---------- Intro paragraph ---------- */
+  /* GAP FIX: this used to be a positive 2.6cqw top margin. .about-headline's
+     own height is fixed (it can't shrink — that height is what lets
+     "design"'s canvas auto-fit reach its full configured 150px size, and
+     "tech"/"Storytelling"'s own sizes are derived from that same box; see
+     the comments on .about-headline and .storytelling-blur above), and
+     each word sits vertically centered inside it, so there's always some
+     empty space below the word before the box itself ends — on top of
+     which the old positive margin added even more room, producing the
+     oversized gap you flagged (confirmed against your 3 screenshots:
+     Design/tech/Storytelling all had noticeably more space here than the
+     rest of the page's rhythm). Turning the margin negative reclaims part
+     of that box's own empty space instead of adding to it — verified
+     (real Inter, real rendering, all three rotating words, 1920px→320px)
+     that this stays comfortably clear of every word's lowest descender —
+     including "Storytelling"'s "y"/"g", the closest case — at every
+     breakpoint, while landing all three noticeably closer to the
+     paragraph than before. It's a cqw value like the rest of this page's
+     spacing so it keeps scaling with the same box instead of going stale
+     at some sizes. */
+  .about-copy {
+    margin: -1.4cqw 0 0;
+    max-width: 66.5%;
+    font-size: clamp(0.9rem, 1.35cqw, 1.1875rem);
+    line-height: 1.55;
+    font-weight: 400;
+    color: #000000;
   }
+  .about-copy strong { font-weight: 700; }
 
-  .about-footer__resume {
-    display: block;
-    flex-shrink: 0;
+  /* ---------- Four-image gallery ---------- */
+  .about-gallery {
+    margin-top: 2.9cqw;
+    display: grid;
+    grid-template-columns: 283fr 284fr 284fr 162fr;
+    gap: 1.05cqw;
   }
-  .about-footer__resume-icon {
-    display: block;
-    height: var(--resume-h);
-    width: auto;
+  .gallery-ph {
+    width: 100%;
+    height: 100%;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        #ececec,
+        #ececec 10px,
+        #e2e2e2 10px,
+        #e2e2e2 20px
+      );
+    border: 1px solid #d8d8d8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.5rem;
   }
-  .about-footer__resume:hover { opacity: 0.75; }
+  .gallery-ph span {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #8a8a8a;
+    line-height: 1.4;
+  }
+  .gallery-item--1 { aspect-ratio: 283 / 392; }
+  .gallery-item--2 { aspect-ratio: 284 / 392; }
+  .gallery-item--3 { aspect-ratio: 284 / 392; }
+  .gallery-item--4 { aspect-ratio: 162 / 392; }
 
-  @media (max-width: 768px) {
-    .about-footer { align-items: center; }
+  /* ---------- Under ~640px: same hierarchy, image order and no new
+     elements — just a single reflowed column. A 2-across grid was tried
+     first, but the four images use different aspect ratios in the
+     desktop layout (matching the reference's asymmetric widths), which
+     breaks visually in a 2-up grid where every column is forced to the
+     same width. Stacking them full-width, one per row, keeps the exact
+     same top-to-bottom order and each image's own proportions without
+     that mismatch. ---- */
+  @media (max-width: 640px) {
+    .about-stage { padding: 8vw 6% 3rem; }
+    .about-copy { max-width: 100%; }
+    .about-gallery {
+      grid-template-columns: 1fr;
+      gap: 4vw;
+    }
   }
 </style>
 </head>
 <body>
 
-  <header class="about-header">
-    <a href="index.html" class="about-header__home">home.</a>
+  <div class="about-stage">
 
-    <button
-      type="button"
-      class="about-header__toggle"
-      id="navToggle"
-      aria-expanded="false"
-      aria-controls="aboutNav"
-      aria-label="Toggle navigation menu"
-    >
-      <span class="about-header__toggle-bar"></span>
-    </button>
-
-    <nav class="about-header__nav" id="aboutNav">
-      <a href="works.html" class="about-header__nav-link">works.</a>
-      <a href="socials.html" class="about-header__nav-link">socials.</a>
-      <a href="more.html" class="about-header__nav-link">more.</a>
-    </nav>
-  </header>
-
-  <main class="about-main">
-    <img src="assets/aboutme/aboutme.png" alt="About me hand-lettered logo" class="about-main__logo" />
-
-    <p class="about-main__name">Im <strong>ANIMESH HEMBRAM</strong></p>
-    <p class="about-main__tagline">I&rsquo;m a Creative Builder who enjoys turning ideas into thoughtful digital experiences across</p>
-
-    <div class="about-main__pillars">
-      <span class="about-main__pillar about-main__pillar--design">DESIGN</span>
-      <img src="assets/aboutme/pencil.png" alt="Pencil icon" class="about-main__icon about-main__icon--pencil" />
-      <span class="about-main__pillar about-main__pillar--tech">TECHNOLOGY</span>
-      <img src="assets/aboutme/CRT computer.png" alt="Retro CRT computer icon" class="about-main__icon about-main__icon--crt" />
-      <span class="about-main__pillar about-main__pillar--story">STORYTELLING.</span>
+    <div class="about-headline">
+      <div id="headlineDesign" class="tech-text headline-pane is-active" role="img" aria-label="Design">
+        <canvas class="tech-text-canvas"></canvas>
+      </div>
+      <div id="headlineTech" class="tech-decrypt headline-pane" role="img" aria-label="tech" aria-hidden="true"></div>
+      <div id="headlineStorytelling" class="storytelling-blur headline-pane" role="img" aria-label="Storytelling" aria-hidden="true"></div>
     </div>
 
-    <p class="about-main__description">I care about making things simple, purposeful, and <em>visually strong</em> while keeping the identity and character of a brand intact. I&rsquo;m always ready to <em>learn, experiment, collaborate</em>, and take on work that pushes an idea further.</p>
-  </main>
+    <p class="about-copy">I&rsquo;m a <strong>Creative Builder</strong> who enjoys turning ideas into thoughtful digital experiences. I care about making things simple, purposeful, and visually strong while keeping the identity and character of a brand intact. I&rsquo;m always ready to learn, experiment, collaborate, and take on work that pushes an idea further.</p>
 
-  <footer class="about-footer">
-    <img src="assets/aboutme/cassette.png" alt="Cassette tape" class="about-footer__tape" />
+    <div class="about-gallery">
+      <div class="gallery-item gallery-item--1">
+        <div class="gallery-ph"><span>Image 1 placeholder<br>(reference: red car)</span></div>
+      </div>
+      <div class="gallery-item gallery-item--2">
+        <div class="gallery-ph"><span>Image 2 placeholder<br>(reference: bracelet)</span></div>
+      </div>
+      <div class="gallery-item gallery-item--3">
+        <div class="gallery-ph"><span>Image 3 placeholder<br>(reference: ring)</span></div>
+      </div>
+      <div class="gallery-item gallery-item--4">
+        <div class="gallery-ph"><span>Image 4<br>placeholder<br>(reference: shoe)</span></div>
+      </div>
+    </div>
 
-    <a href="assets/aboutme/Animesh-Hembram-Resume.pdf" class="about-footer__resume" download aria-label="Download resume">
-      <img src="assets/aboutme/resume-icon.png" alt="Resume, download" class="about-footer__resume-icon" />
-    </a>
-  </footer>
+  </div>
 
-<script>
+  <script>
+  // =======================================================================
+  // "design" headline — canvas text effect, ported from a supplied React
+  // component (TechText.jsx) to plain vanilla JS, since this project has no
+  // build step / framework. The drawing logic below (sprites, reveal
+  // spotlight, drag-with-spring-physics, corner-frame selection, "specks"
+  // particles, idle sweep) is copied over unchanged from that component;
+  // only the React-specific plumbing (hooks, refs, JSX, prop re-render
+  // sync) is replaced with a plain config object and direct DOM lookups,
+  // since a static page has no component re-render cycle to sync against.
+  // See the DESIGN HEADLINE comment in <style> above for the two disclosed
+  // parameter choices (text, color/accentColor) and the sizing rationale.
+  // =======================================================================
   (function () {
-    var toggle = document.getElementById('navToggle');
-    var nav = document.getElementById('aboutNav');
+    if (window.__aboutDesignTextStarted) return; // one instance, ever
+    window.__aboutDesignTextStarted = true;
 
-    toggle.addEventListener('click', function () {
-      var isOpen = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', String(!isOpen));
-      nav.classList.toggle('about-header__nav--open', !isOpen);
+    var LABEL_FONT = '10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    var FALLOFF_STEPS = 8;
+    var SPRING = 320;
+    var DAMPING = 22;
+
+    function approach(current, target, dt, seconds) {
+      return current + (target - current) * (1 - Math.exp(-dt / seconds));
+    }
+
+    function hexToRgb(hex) {
+      var h = String(hex || '').replace('#', '');
+      if (h.length === 3) h = h.replace(/./g, function (c) { return c + c; });
+      var n = parseInt(h.slice(0, 6), 16);
+      return isNaN(n) ? [255, 255, 255] : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function rgba(hex, alpha) {
+      var c = hexToRgb(hex);
+      return 'rgba(' + c[0] + ', ' + c[1] + ', ' + c[2] + ', ' + alpha + ')';
+    }
+
+    function noise() {
+      var h = 2166136261;
+      for (var i = 0; i < arguments.length; i++) {
+        var value = arguments[i];
+        h = Math.imul(h ^ (value | 0), 16777619);
+        h ^= h >>> 13;
+        h = Math.imul(h, 0x5bd1e995);
+        h ^= h >>> 15;
+      }
+      return (h >>> 0) / 4294967296;
+    }
+
+    function signed(value) {
+      return value > 0 ? '+' + value : value < 0 ? '−' + -value : '0';
+    }
+
+    function initTechText(container, s) {
+      var canvas = container.querySelector('.tech-text-canvas');
+      var ctx = canvas && canvas.getContext('2d');
+      var scratch = document.createElement('canvas');
+      var scratchCtx = scratch.getContext('2d');
+      if (!container || !canvas || !ctx || !scratchCtx) return;
+
+      var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var width = 1;
+      var height = 1;
+      var dpr = 1;
+      var raf = 0;
+      var last = performance.now();
+      var visible = true;
+      var layoutKey = '';
+      var requestedFont = '';
+      var word = null;
+      var glyphs = [];
+      var presence = 0;
+      var clock = 0;
+      var pulse = 0;
+      var placed = false;
+      var dragging = -1;
+      var pointer = { x: 0, y: 0, inside: false };
+      var grab = { x: 0, y: 0 };
+      var lens = { x: 0, y: 0 };
+      var frame = { x1: 0, y1: 0, x2: 0, y2: 0, alpha: 0, index: -1 };
+
+      function refreshFonts() {
+        layoutKey = '';
+        wake();
+      }
+
+      function family() {
+        return s.fontFamily || getComputedStyle(container).fontFamily || 'sans-serif';
+      }
+      function fontFor(size) {
+        return s.fontWeight + ' ' + size + 'px ' + family();
+      }
+
+      function setFont(target, size) {
+        target.font = fontFor(size);
+        if ('letterSpacing' in target) target.letterSpacing = (s.letterSpacing * size) + 'px';
+        target.textAlign = 'left';
+        target.textBaseline = 'alphabetic';
+      }
+
+      function sprite(view, glyph, stroke) {
+        var pad = Math.ceil(s.strokeWidth * 2 + 4);
+        var left = glyph.box.x1 - pad;
+        var top = glyph.box.y1 - pad;
+        var w = glyph.box.x2 - glyph.box.x1 + pad * 2;
+        var h = glyph.box.y2 - glyph.box.y1 + pad * 2;
+        var image = document.createElement('canvas');
+        image.width = Math.max(1, Math.ceil(w * dpr));
+        image.height = Math.max(1, Math.ceil(h * dpr));
+        var c = image.getContext('2d');
+        if (!c) return { image: image, left: left, top: top };
+        c.setTransform(dpr, 0, 0, dpr, -left * dpr, -top * dpr);
+        setFont(c, view.size);
+        if (stroke) {
+          c.lineJoin = 'round';
+          c.lineWidth = s.strokeWidth * 2;
+          c.lineCap = 'butt';
+          c.strokeStyle = s.color;
+          if (s.lineStyle !== 'solid') c.setLineDash([Math.max(1, s.dashLength), Math.max(1, s.dashGap)]);
+          c.strokeText(glyph.char, glyph.x, view.baseline);
+          c.setLineDash([]);
+          c.globalCompositeOperation = 'destination-out';
+          c.fillStyle = '#000000';
+          c.fillText(glyph.char, glyph.x, view.baseline);
+          c.globalCompositeOperation = 'source-over';
+        } else {
+          c.fillStyle = s.color;
+          c.fillText(glyph.char, glyph.x, view.baseline);
+        }
+        return { image: image, left: left, top: top };
+      }
+
+      function ensureLayout() {
+        var key = [
+          s.text, family(), s.fontWeight, s.fontSize, s.letterSpacing, s.color,
+          s.dashLength, s.dashGap, s.strokeWidth, s.lineStyle, width, height, dpr
+        ].join('|');
+        if (key === layoutKey && word) return word;
+        layoutKey = key;
+        var wanted = fontFor(64);
+        if (document.fonts && wanted !== requestedFont) {
+          requestedFont = wanted;
+          document.fonts.load(wanted, s.text).then(refreshFonts, refreshFonts);
+        }
+
+        var probe = scratchCtx;
+        setFont(probe, s.fontSize);
+        var m = probe.measureText(s.text);
+        var fit = Math.min(
+          1,
+          (width * 0.9) / Math.max(m.actualBoundingBoxLeft + m.actualBoundingBoxRight, 1),
+          (height * 0.66) / Math.max(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent, 1)
+        );
+        var size = s.fontSize * fit;
+        setFont(probe, size);
+        m = probe.measureText(s.text);
+        var inkWidth = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+        var inkHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+        // Left-aligned (not centered): ink starts flush at the container's
+        // left edge, x=0, so "Design" lines up with the intro paragraph's
+        // own left edge below it (same content-box, no left padding on
+        // either element). Vertical centering is unchanged — only the
+        // horizontal position moved.
+        var x = m.actualBoundingBoxLeft;
+        var baseline = (height - inkHeight) / 2 + m.actualBoundingBoxAscent;
+        var next = {
+          size: size,
+          baseline: baseline,
+          left: x - m.actualBoundingBoxLeft,
+          right: x + m.actualBoundingBoxRight,
+          top: baseline - m.actualBoundingBoxAscent,
+          bottom: baseline + m.actualBoundingBoxDescent
+        };
+        word = next;
+
+        var chars = Array.from(s.text);
+        var previous = glyphs;
+        glyphs = [];
+        var prefix = '';
+        chars.forEach(function (char, i) {
+          prefix += char;
+          var own = probe.measureText(char);
+          var gx = x + probe.measureText(prefix).width - own.width;
+          if (!char.trim()) return;
+          var base = {
+            char: char,
+            x: gx,
+            box: {
+              x1: gx - own.actualBoundingBoxLeft,
+              y1: baseline - own.actualBoundingBoxAscent,
+              x2: gx + own.actualBoundingBoxRight,
+              y2: baseline + own.actualBoundingBoxDescent
+            }
+          };
+          var kept = previous[glyphs.length];
+          glyphs.push(Object.assign({}, base, {
+            offset: (kept && kept.char === char) ? kept.offset : { x: 0, y: 0 },
+            velocity: { x: 0, y: 0 },
+            outline: 0,
+            index: i,
+            fill: sprite(next, base, false),
+            dashes: sprite(next, base, true)
+          }));
+        });
+        dragging = -1;
+        frame.index = -1;
+        return next;
+      }
+
+      function glyphAt(x, y) {
+        if (!word || y < word.top - 24 || y > word.bottom + 24) return -1;
+        var best = -1;
+        var bestDistance = Infinity;
+        glyphs.forEach(function (glyph, i) {
+          var x1 = glyph.box.x1 + glyph.offset.x;
+          var x2 = glyph.box.x2 + glyph.offset.x;
+          var d = x < x1 ? x1 - x : x > x2 ? x - x2 : 0;
+          if (d < bestDistance) {
+            bestDistance = d;
+            best = i;
+          }
+        });
+        return bestDistance < 28 ? best : -1;
+      }
+
+      function falloff(target, cx, cy, radius, strength, softness) {
+        var inner = Math.min(1, Math.max(0, 1 - softness));
+        var gradient = target.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, ' + strength + ')');
+        if (inner > 0.995) {
+          gradient.addColorStop(0.995, 'rgba(0, 0, 0, ' + strength + ')');
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          return gradient;
+        }
+        for (var i = 0; i <= FALLOFF_STEPS; i++) {
+          var t = i / FALLOFF_STEPS;
+          var eased = t * t * (3 - 2 * t);
+          gradient.addColorStop(inner + (1 - inner) * t, 'rgba(0, 0, 0, ' + (strength * (1 - eased)) + ')');
+        }
+        return gradient;
+      }
+
+      function blit(target, art, dx, dy, originX, originY) {
+        target.drawImage(
+          art.image,
+          Math.round((art.left + dx) * dpr - originX),
+          Math.round((art.top + dy) * dpr - originY)
+        );
+      }
+
+      function drawReveal() {
+        var radius = s.reach * dpr;
+        var cx = lens.x * dpr;
+        var cy = lens.y * dpr;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = falloff(ctx, cx, cy, radius, presence, s.softness);
+        ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+        ctx.globalCompositeOperation = 'source-over';
+
+        var x0 = Math.max(0, Math.floor(cx - radius));
+        var y0 = Math.max(0, Math.floor(cy - radius));
+        var x1 = Math.min(canvas.width, Math.ceil(cx + radius));
+        var y1 = Math.min(canvas.height, Math.ceil(cy + radius));
+        if (x1 <= x0 || y1 <= y0) return;
+        var w = x1 - x0;
+        var h = y1 - y0;
+        if (scratch.width < w || scratch.height < h) {
+          scratch.width = Math.max(scratch.width, w);
+          scratch.height = Math.max(scratch.height, h);
+        }
+        scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+        scratchCtx.globalCompositeOperation = 'source-over';
+        scratchCtx.clearRect(0, 0, w, h);
+        glyphs.forEach(function (glyph) { blit(scratchCtx, glyph.dashes, glyph.offset.x, glyph.offset.y, x0, y0); });
+        scratchCtx.globalCompositeOperation = 'destination-in';
+        scratchCtx.fillStyle = falloff(scratchCtx, cx - x0, cy - y0, radius, 1, s.softness);
+        scratchCtx.fillRect(0, 0, w, h);
+        scratchCtx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = presence;
+        ctx.drawImage(scratch, 0, 0, w, h, x0, y0, w, h);
+        ctx.globalAlpha = 1;
+      }
+
+      function crisp(value) {
+        return (Math.round(value * dpr) + 0.5) / dpr;
+      }
+
+      function perimeterPoint(distance, w, h) {
+        var d = ((distance % (2 * (w + h))) + 2 * (w + h)) % (2 * (w + h));
+        if (d < w) return [frame.x1 + d, frame.y1, 0, -1];
+        d -= w;
+        if (d < h) return [frame.x2, frame.y1 + d, 1, 0];
+        d -= h;
+        if (d < w) return [frame.x2 - d, frame.y2, 0, 1];
+        d -= w;
+        return [frame.x1, frame.y2 - d, -1, 0];
+      }
+
+      function drawSpecks(a) {
+        var w = frame.x2 - frame.x1;
+        var h = frame.y2 - frame.y1;
+        if (w < 2 || h < 2) return;
+        var perimeter = 2 * (w + h);
+        var seed = frame.index + 1;
+        var grid = 3;
+        var k, period, t, cycle, life, pt, px, py, nx, ny, pick, size, large, out, x, y, tone, blink, alpha, left, top;
+
+        for (k = 0; k < s.specks; k++) {
+          period = 0.5 + noise(seed, k, 11) * 1.2;
+          t = pulse / period + noise(seed, k, 17);
+          cycle = Math.floor(t);
+          life = t - cycle;
+          if (life > 0.7) continue;
+          pt = perimeterPoint(noise(seed, k, cycle) * perimeter, w, h);
+          px = pt[0]; py = pt[1]; nx = pt[2]; ny = pt[3];
+          pick = noise(seed, k, cycle, 2);
+          size = pick < 0.46 ? 2 : pick < 0.7 ? 3 : pick < 0.84 ? 5 : pick < 0.94 ? 8 : 11;
+          large = size >= 8;
+          out = (large ? 9 : 4) + Math.floor(noise(seed, k, cycle, 1) * 5) * grid;
+          x = frame.x1 + Math.round((px + nx * out - frame.x1) / grid) * grid;
+          y = frame.y1 + Math.round((py + ny * out - frame.y1) / grid) * grid;
+          tone = noise(seed, k, cycle, 3);
+          blink = (life < 0.06 || (life > 0.32 && life < 0.36)) ? 0.35 : 1;
+          alpha = a * (large ? 0.3 + 0.4 * tone : 0.3 + 0.6 * tone) * blink;
+          left = Math.round(x - size / 2);
+          top = Math.round(y - size / 2);
+          if (tone < 0.26 || (large && tone < 0.78)) {
+            ctx.strokeStyle = rgba(s.accentColor, alpha);
+            ctx.strokeRect(left + 0.5, top + 0.5, size, size);
+            if (large && tone > 0.5) {
+              ctx.fillStyle = rgba(s.accentColor, alpha);
+              ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+            }
+          } else {
+            ctx.fillStyle = rgba(s.accentColor, alpha);
+            ctx.fillRect(left, top, size, size);
+          }
+        }
+
+        for (var j = 0; j < 2; j++) {
+          var head = (pulse * 0.42 * s.speed + j * 0.5) * perimeter;
+          for (var i = 0; i < 4; i++) {
+            var p = perimeterPoint(head - i * 6, w, h);
+            var sz = i === 0 ? 3 : 2;
+            ctx.fillStyle = rgba(s.accentColor, a * [0.95, 0.55, 0.32, 0.16][i]);
+            ctx.fillRect(Math.round(p[0] - sz / 2), Math.round(p[1] - sz / 2), sz, sz);
+          }
+        }
+      }
+
+      function drawFrame() {
+        var glyph = glyphs[frame.index];
+        if (!glyph || frame.alpha < 0.01) return;
+        var a = frame.alpha;
+        // Clamp the selection frame's border/corner-handle coordinates to
+        // the visible canvas before drawing. The frame is the glyph's own
+        // box padded by 6px on every side (see the focus/selection block
+        // above), so for a glyph sitting flush against an edge of the
+        // canvas — e.g. the first letter, now that the headline draws
+        // flush-left instead of centered — that padding pushes the frame's
+        // near edge (and its two corner handles) a few pixels into
+        // negative/out-of-bounds territory, off-canvas and therefore
+        // invisible, while the far edge still renders fine. Clamping here
+        // only changes where this purely decorative overlay is drawn; it
+        // does not touch the headline text's own font, size, color, or
+        // position, or the glyph's hit-testing box used elsewhere.
+        var x1 = crisp(Math.max(0, frame.x1));
+        var y1 = crisp(Math.max(0, frame.y1));
+        var x2 = crisp(Math.min(width, frame.x2));
+        var y2 = crisp(Math.min(height, frame.y2));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        var moved = Math.hypot(glyph.offset.x, glyph.offset.y);
+        if (moved > 1) {
+          var hx = (glyph.box.x1 + glyph.box.x2) / 2;
+          var hy = (glyph.box.y1 + glyph.box.y2) / 2;
+          ctx.beginPath();
+          ctx.moveTo(hx, hy);
+          ctx.lineTo(hx + glyph.offset.x, hy + glyph.offset.y);
+          ctx.setLineDash([3, 4]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = rgba(s.accentColor, 0.45 * a);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.rect(Math.round(hx) - 2, Math.round(hy) - 2, 4, 4);
+          ctx.fillStyle = rgba(s.accentColor, 0.7 * a);
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.rect(x1, y1, x2 - x1, y2 - y1);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(s.accentColor, 0.5 * a);
+        ctx.stroke();
+
+        ctx.beginPath();
+        [[x1, y1], [x2, y1], [x2, y2], [x1, y2]].forEach(function (pt) {
+          ctx.rect(Math.round(pt[0]) - 2, Math.round(pt[1]) - 2, 5, 5);
+        });
+        ctx.fillStyle = rgba(s.accentColor, 0.95 * a);
+        ctx.fill();
+
+        if (s.specks > 0) {
+          ctx.lineWidth = 1;
+          drawSpecks(a);
+        }
+
+        if (!s.labels) return;
+        ctx.font = LABEL_FONT;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = rgba(s.accentColor, 0.62 * a);
+        var label = moved > 1
+          ? signed(Math.round(glyph.offset.x)) + ', ' + signed(Math.round(-glyph.offset.y))
+          : glyph.char + '  ' + Math.round(glyph.box.x2 - glyph.box.x1) + ' × ' + Math.round(glyph.box.y2 - glyph.box.y1);
+        ctx.fillText(label, Math.round(frame.x1), Math.round(frame.y1) - 7);
+      }
+
+      function tick(now) {
+        raf = 0;
+        var dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+        last = now;
+        var view = ensureLayout();
+
+        var sweeping = s.sweep && !reducedMotion && !pointer.inside && dragging < 0;
+        if (sweeping) clock += dt * s.speed;
+        pulse += dt;
+        var targetX = pointer.x;
+        var targetY = pointer.y;
+        if (sweeping) {
+          targetX = view.left + (view.right - view.left) * (0.5 - 0.5 * Math.cos(clock * 0.45));
+          targetY = view.top + (view.bottom - view.top) * (0.45 + 0.1 * Math.sin(clock * 0.8));
+        }
+        var active = pointer.inside || sweeping || dragging >= 0;
+        if (active && !placed) {
+          lens.x = targetX;
+          lens.y = targetY;
+        }
+        if (active) {
+          var lag = pointer.inside ? 0.05 : 0.22;
+          lens.x = approach(lens.x, targetX, dt, lag);
+          lens.y = approach(lens.y, targetY, dt, lag);
+        }
+        placed = active;
+        presence = approach(presence, s.reveal === 'area' && active && dragging < 0 ? 1 : 0, dt, 0.16);
+
+        var moving = false;
+        glyphs.forEach(function (glyph, i) {
+          if (i === dragging) {
+            glyph.offset.x = approach(glyph.offset.x, pointer.x - grab.x, dt, 0.03);
+            glyph.offset.y = approach(glyph.offset.y, pointer.y - grab.y, dt, 0.03);
+            glyph.velocity.x = 0;
+            glyph.velocity.y = 0;
+            moving = true;
+            return;
+          }
+          var offset = glyph.offset, velocity = glyph.velocity;
+          if (Math.abs(offset.x) < 0.05 && Math.abs(offset.y) < 0.05 && Math.hypot(velocity.x, velocity.y) < 0.5) {
+            offset.x = 0; offset.y = 0; velocity.x = 0; velocity.y = 0;
+            return;
+          }
+          velocity.x += (-SPRING * offset.x - DAMPING * velocity.x) * dt;
+          velocity.y += (-SPRING * offset.y - DAMPING * velocity.y) * dt;
+          offset.x += velocity.x * dt;
+          offset.y += velocity.y * dt;
+          moving = true;
+        });
+
+        var focus = dragging >= 0 ? dragging : (active ? glyphAt(lens.x, lens.y) : -1);
+        if (focus >= 0 && s.selection) {
+          var glyph = glyphs[focus];
+          var bx1 = glyph.box.x1 + glyph.offset.x - 6;
+          var by1 = glyph.box.y1 + glyph.offset.y - 6;
+          var bx2 = glyph.box.x2 + glyph.offset.x + 6;
+          var by2 = glyph.box.y2 + glyph.offset.y + 6;
+          if (frame.index < 0 || frame.alpha < 0.02) {
+            frame.x1 = bx1; frame.y1 = by1; frame.x2 = bx2; frame.y2 = by2;
+          }
+          var glide = focus === dragging ? 0.02 : 0.08;
+          frame.x1 = approach(frame.x1, bx1, dt, glide);
+          frame.y1 = approach(frame.y1, by1, dt, glide);
+          frame.x2 = approach(frame.x2, bx2, dt, glide);
+          frame.y2 = approach(frame.y2, by2, dt, glide);
+          frame.index = focus;
+        }
+        frame.alpha = approach(frame.alpha, focus >= 0 && s.selection ? 1 : 0, dt, 0.1);
+
+        glyphs.forEach(function (glyph, i) {
+          var target = s.reveal === 'letter' && i === focus && i !== dragging ? 1 : 0;
+          glyph.outline = approach(glyph.outline, target, dt, 0.09);
+          if (Math.abs(glyph.outline - target) > 0.002) moving = true;
+          else glyph.outline = target;
+        });
+
+        if (s.draggable) container.style.cursor = dragging >= 0 ? 'grabbing' : (focus >= 0 && pointer.inside ? 'grab' : '');
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        glyphs.forEach(function (glyph) {
+          var moved = Math.hypot(glyph.offset.x, glyph.offset.y);
+          if (moved > 1) {
+            ctx.globalAlpha = Math.min(1, moved / 24) * 0.55;
+            blit(ctx, glyph.dashes, 0, 0, 0, 0);
+            ctx.globalAlpha = 1;
+          }
+        });
+        glyphs.forEach(function (glyph) {
+          if (glyph.outline < 0.999) {
+            ctx.globalAlpha = 1 - glyph.outline;
+            blit(ctx, glyph.fill, glyph.offset.x, glyph.offset.y, 0, 0);
+          }
+          if (glyph.outline > 0.001) {
+            ctx.globalAlpha = glyph.outline;
+            blit(ctx, glyph.dashes, glyph.offset.x, glyph.offset.y, 0, 0);
+          }
+          ctx.globalAlpha = 1;
+        });
+        if (presence > 0.001) drawReveal();
+        drawFrame();
+
+        var settling = moving
+          || Math.abs(presence - (s.reveal === 'area' && active && dragging < 0 ? 1 : 0)) > 0.002
+          || (frame.alpha > 0.01 && frame.alpha < 0.99);
+        if ((active || settling) && visible) raf = requestAnimationFrame(tick);
+      }
+
+      function wake() {
+        if (raf || !visible) return;
+        last = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+
+      function resize() {
+        width = Math.max(1, container.clientWidth);
+        height = Math.max(1, container.clientHeight);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        layoutKey = '';
+        wake();
+      }
+
+      function locate(e) {
+        var rect = container.getBoundingClientRect();
+        pointer.x = e.clientX - rect.left;
+        pointer.y = e.clientY - rect.top;
+      }
+      function onMove(e) {
+        locate(e);
+        pointer.inside = true;
+        wake();
+      }
+      function onLeave() {
+        if (dragging >= 0) return;
+        pointer.inside = false;
+        wake();
+      }
+      function onDown(e) {
+        locate(e);
+        pointer.inside = true;
+        if (s.draggable && (e.pointerType !== 'mouse' || e.button === 0)) {
+          var index = glyphAt(pointer.x, pointer.y);
+          if (index >= 0) {
+            dragging = index;
+            grab.x = pointer.x - glyphs[index].offset.x;
+            grab.y = pointer.y - glyphs[index].offset.y;
+            if (container.setPointerCapture) container.setPointerCapture(e.pointerId);
+          }
+        }
+        wake();
+      }
+      function onUp(e) {
+        if (dragging >= 0) {
+          dragging = -1;
+          if (container.releasePointerCapture) container.releasePointerCapture(e.pointerId);
+          var rect = container.getBoundingClientRect();
+          pointer.inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+        }
+        wake();
+      }
+
+      container.addEventListener('pointermove', onMove, { passive: true });
+      container.addEventListener('pointerenter', onMove, { passive: true });
+      container.addEventListener('pointerdown', onDown, { passive: true });
+      container.addEventListener('pointerup', onUp, { passive: true });
+      container.addEventListener('pointercancel', onUp, { passive: true });
+      container.addEventListener('pointerleave', onLeave, { passive: true });
+
+      var resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(container);
+      var intersectionObserver = new IntersectionObserver(function (entries) {
+        visible = entries[0].isIntersecting;
+        wake();
+      });
+      intersectionObserver.observe(container);
+      if (document.fonts) document.fonts.ready.then(refreshFonts, refreshFonts);
+
+      resize();
+    }
+
+    var container = document.getElementById('headlineDesign');
+    if (!container) return; // markup not present — stay safe
+
+    initTechText(container, {
+      text: 'Design',
+      fontFamily: '',
+      fontWeight: 600,
+      fontSize: 150,
+      letterSpacing: -0.05,
+      color: '#ff0000',
+      accentColor: '#ff0000',
+      reach: 200,
+      softness: 0.7,
+      dashLength: 4,
+      dashGap: 2,
+      strokeWidth: 1.5,
+      lineStyle: 'dashed',
+      reveal: 'letter',
+      specks: 15,
+      selection: true,
+      labels: true,
+      draggable: true,
+      sweep: true,
+      speed: 1
+    });
+  })();
+
+  // =======================================================================
+  // TECH DECRYPT (Step 2 of 3): "tech" headline — decrypt/scramble text
+  // effect, ported from the supplied React component (DecryptedText.jsx)
+  // to plain vanilla JS, same reason as the "design" port above: no build
+  // step for JSX/hooks to run through here.
+  //
+  // Your component supports several independent reveal modes, selected by
+  // its `animateOn`/`clickMode`/`sequential`/`revealDirection` props — the
+  // four usage examples you sent each demonstrate one (hover-to-decrypt,
+  // click-once, click-toggle, animate-on-view-once). Nothing in this step
+  // asks "tech" to react to hovering or clicking — it just needs to decrypt
+  // itself in once, on its own, the moment it becomes the active headline
+  // — so this port implements exactly that one mode: your Example 4
+  // ("animate on view, runs once" — revealDirection: "start", sequential:
+  // true, useOriginalCharsOnly: false, default speed/characters), which is
+  // the closest match to "reveal once, unprompted" among what you sent.
+  // The only change from that example is *what* triggers it: your version
+  // starts on IntersectionObserver ("scrolled into view"); here it starts
+  // when the 1-minute handoff below calls trigger() instead, since our
+  // condition is elapsed time, not scroll position — this is the same
+  // kind of plumbing swap as "design"'s React-hooks-to-plain-functions
+  // one, not a different animation. The hover/click/toggle/reverse modes
+  // your component also supports were not ported, since nothing in this
+  // step uses them; ask if a later step wants "tech" to react to
+  // hover/click too and I'll port the rest of the component faithfully
+  // the same way "design"'s drag/selection/specks were.
+  //
+  // The per-character reveal/shuffle algorithm below (shuffleText,
+  // getNextIndex, the interval loop) is copied over with the same logic
+  // and variable names as your sequential/forward branch, translated from
+  // React state/refs to plain closures.
+  // =======================================================================
+  (function () {
+    if (window.__aboutTechDecryptStarted) return; // one instance, ever
+    window.__aboutTechDecryptStarted = true;
+
+    function initDecryptedText(container, s) {
+      var text = s.text;
+      var speed = s.speed;
+      var revealDirection = s.revealDirection;
+      var characters = s.characters;
+      var availableChars = s.useOriginalCharsOnly
+        ? Array.from(new Set(text.split(''))).filter(function (c) { return c !== ' '; })
+        : characters.split('');
+
+      var srEl = document.createElement('span');
+      srEl.style.position = 'absolute';
+      srEl.style.width = '1px';
+      srEl.style.height = '1px';
+      srEl.style.padding = '0';
+      srEl.style.margin = '-1px';
+      srEl.style.overflow = 'hidden';
+      srEl.style.clip = 'rect(0,0,0,0)';
+      srEl.style.border = '0';
+      srEl.textContent = text;
+      var charsEl = document.createElement('span');
+      charsEl.setAttribute('aria-hidden', 'true');
+      container.appendChild(srEl);
+      container.appendChild(charsEl);
+
+      var revealedIndices = new Set();
+      var isAnimating = false;
+      var intervalId = null;
+      var currentDisplay = text;
+
+      function shuffleText(revealedSet) {
+        return text.split('').map(function (char, i) {
+          if (char === ' ') return ' ';
+          if (revealedSet.has(i)) return text[i];
+          return availableChars[Math.floor(Math.random() * availableChars.length)];
+        }).join('');
+      }
+
+      // NOTE: the source also builds a `computeOrder()` index list on
+      // trigger, but only ever reads it back in its *reverse* branch
+      // (un-decrypting on mouse-leave) — the forward/reveal path your
+      // Example 4 uses reads positions from getNextIndex() below instead,
+      // same as the source. Since this port only implements the
+      // reveal-once path, computeOrder's forward computation would be
+      // dead weight here exactly as it is in the source's forward path,
+      // so it's left out rather than carried over unused.
+      function getNextIndex(revealedSet) {
+        var textLength = text.length;
+        if (revealDirection === 'start') return revealedSet.size;
+        if (revealDirection === 'end') return textLength - 1 - revealedSet.size;
+        if (revealDirection === 'center') {
+          var middle = Math.floor(textLength / 2);
+          var offset = Math.floor(revealedSet.size / 2);
+          var nextIndex = revealedSet.size % 2 === 0 ? middle + offset : middle - offset - 1;
+          if (nextIndex >= 0 && nextIndex < textLength && !revealedSet.has(nextIndex)) return nextIndex;
+          for (var i = 0; i < textLength; i++) {
+            if (!revealedSet.has(i)) return i;
+          }
+          return 0;
+        }
+        return revealedSet.size;
+      }
+
+      function render() {
+        var frag = document.createDocumentFragment();
+        currentDisplay.split('').forEach(function (ch, i) {
+          var span = document.createElement('span');
+          var revealedOrDone = revealedIndices.has(i) || (!isAnimating && revealedIndices.size === text.length);
+          span.className = revealedOrDone ? 'tech-decrypt-revealed' : 'tech-decrypt-encrypted';
+          span.textContent = ch;
+          frag.appendChild(span);
+        });
+        charsEl.innerHTML = '';
+        charsEl.appendChild(frag);
+        srEl.textContent = currentDisplay;
+      }
+
+      function trigger() {
+        if (isAnimating) return;
+        revealedIndices = new Set();
+        isAnimating = true;
+        clearInterval(intervalId);
+        // Re-scramble synchronously, right now, rather than waiting for
+        // the first interval tick: this pane can be triggered again on a
+        // later rotation cycle while still showing the *previous* cycle's
+        // fully-solved text, and with the panes now switching instantly
+        // (see the .headline-pane fix above), that stale solved text
+        // would otherwise flash for one `speed` tick before the fresh
+        // scramble starts.
+        currentDisplay = shuffleText(revealedIndices);
+        render();
+        intervalId = setInterval(function () {
+          if (revealedIndices.size < text.length) {
+            var nextIndex = getNextIndex(revealedIndices);
+            revealedIndices.add(nextIndex);
+            currentDisplay = shuffleText(revealedIndices);
+            render();
+          } else {
+            clearInterval(intervalId);
+            isAnimating = false;
+            currentDisplay = text;
+            render();
+          }
+        }, speed);
+      }
+
+      // Initial state: fully scrambled, matching the source's "animate on
+      // view" mode before it has been triggered.
+      currentDisplay = shuffleText(revealedIndices);
+      render();
+
+      return { trigger: trigger };
+    }
+
+    var techContainer = document.getElementById('headlineTech');
+    if (!techContainer) return; // markup not present — stay safe
+
+    var techDecrypted = initDecryptedText(techContainer, {
+      text: 'tech',
+      speed: 50,
+      characters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+',
+      useOriginalCharsOnly: false,
+      revealDirection: 'start'
     });
 
-    // Reset the menu state when leaving the collapsed (tablet/mobile) breakpoint
-    var mq = window.matchMedia('(max-width: 1024px)');
-    function handleBreakpointChange(e) {
-      if (!e.matches) {
-        toggle.setAttribute('aria-expanded', 'false');
-        nav.classList.remove('about-header__nav--open');
-      }
+    // ---------------------------------------------------------------------
+    // Rotation: "design" shows first; every 5 seconds the headline moves
+    // to the next available text and loops back to "design" once it's
+    // been through all of them — the same shape as the site's original
+    // 15s Design→Tech→Storytelling rotation, just with these new per-word
+    // animations and a 5s interval. The 5s figure is purely "how long
+    // until the next switch"; it has no effect on how long an individual
+    // animation takes to play (e.g. "tech"'s ~200ms decrypt) — that's
+    // entirely up to each pane's own animation, unchanged.
+    //
+    // Panes already occupy the same box (see .headline-pane in <style>),
+    // so switching between them never changes .about-headline's own
+    // size/position and nothing else on the page shifts. "design"'s own
+    // script/animation above is untouched by this — its pane is simply
+    // shown/hidden; its sweep keeps running underneath either way, same
+    // as before.
+    // ---------------------------------------------------------------------
+    var HEADLINE_ROTATION_MS = 5000;
+    var designPane = document.getElementById('headlineDesign');
+    var techPane = document.getElementById('headlineTech');
+    var storytellingPane = document.getElementById('headlineStorytelling');
+    var panes = [
+      { el: designPane, activate: null }, // continuous idle sweep — nothing to (re)trigger
+      { el: techPane, activate: function () { techDecrypted.trigger(); } },
+      { el: storytellingPane, activate: function () { if (window.__storytellingBlur) window.__storytellingBlur.trigger(); } }
+    ].filter(function (p) { return !!p.el; });
+
+    var activeIndex = 0;
+
+    function showPane(index) {
+      panes.forEach(function (pane, i) {
+        if (i === index) {
+          pane.el.classList.add('is-active');
+          pane.el.removeAttribute('aria-hidden');
+        } else {
+          pane.el.classList.remove('is-active');
+          pane.el.setAttribute('aria-hidden', 'true');
+        }
+      });
+      if (panes[index].activate) panes[index].activate();
     }
-    mq.addEventListener('change', handleBreakpointChange);
+
+    if (panes.length > 1) {
+      setInterval(function () {
+        activeIndex = (activeIndex + 1) % panes.length;
+        showPane(activeIndex);
+      }, HEADLINE_ROTATION_MS);
+    }
   })();
-</script>
+
+  // =======================================================================
+  // STORYTELLING BLUR (Step 3 of 3): "Storytelling" headline — staggered
+  // blur/fade/slide-in reveal, ported from the supplied React BlurText
+  // component to plain vanilla JS, same reason as the two ports above: no
+  // build step for JSX/Framer Motion to run through here.
+  //
+  // Timing/easing copied exactly from your component's own defaults, since
+  // you asked to preserve "its original animation behavior, timing, and
+  // visual effects": animationFrom/animationTo for direction:'top'
+  // (blur(10px)/opacity 0/translateY(-50px) → blur(5px)/opacity .5/
+  // translateY(5px) → blur(0)/opacity 1/translateY(0)), stepDuration 0.35s
+  // per step (0.7s total across the 2 "to" steps), evenly-spaced keyframe
+  // offsets (0, 0.5, 1) matching Framer Motion's `times`, linear easing
+  // (your component's default `ease` is the identity function t => t,
+  // i.e. CSS `linear`), and delay={200} from your usage example (each
+  // segment starts 200ms after the previous one). The Web Animations API
+  // (element.animate()) is the direct vanilla equivalent of the Framer
+  // Motion per-segment animate() call your component builds.
+  //
+  // animateBy: your only usage example used "words", but that example's
+  // text was a multi-word sentence. "Storytelling" is a single word, so
+  // "words" mode would produce exactly one segment — the whole word
+  // fading/blurring in with no stagger at all. You confirmed "letters"
+  // mode instead, so each of the 12 letters blurs in one after another —
+  // the staggered reveal the component is actually built to show.
+  //
+  // Like "tech" above, this only implements the one mode this step needs
+  // (a one-shot reveal triggered externally by the rotation, not your
+  // component's own IntersectionObserver-on-scroll trigger) — same kind
+  // of plumbing swap as "tech"'s, not a different animation. trigger()
+  // resets every letter to its unrevealed ("from") state synchronously
+  // before starting new animations, for the same reason "tech"'s trigger()
+  // does: without it, a letter that already finished revealing on a
+  // previous rotation cycle would still show its solved state for a beat
+  // after the pane becomes active again, instead of restarting the blur-in
+  // fresh every time "Storytelling" comes back around.
+  // =======================================================================
+  (function () {
+    if (window.__aboutStorytellingBlurStarted) return; // one instance, ever
+    window.__aboutStorytellingBlurStarted = true;
+
+    function initBlurText(container, s) {
+      var text = s.text;
+      var animateBy = s.animateBy; // 'words' | 'letters'
+      var direction = s.direction; // 'top' | 'bottom'
+      var delayMs = s.delay;
+      var stepDurationMs = 350; // source: stepDuration = 0.35s per step
+      var totalDurationMs = stepDurationMs * 2; // 2 "to" steps -> 0.7s total
+
+      var fromY = direction === 'top' ? -50 : 50;
+      var midY = direction === 'top' ? 5 : -5;
+      var keyframes = [
+        { filter: 'blur(10px)', opacity: 0, transform: 'translateY(' + fromY + 'px)', offset: 0 },
+        { filter: 'blur(5px)', opacity: 0.5, transform: 'translateY(' + midY + 'px)', offset: 0.5 },
+        { filter: 'blur(0px)', opacity: 1, transform: 'translateY(0px)', offset: 1 }
+      ];
+
+      var segments = animateBy === 'words' ? text.split(' ') : Array.from(text);
+      var letters = [];
+
+      segments.forEach(function (segment, index) {
+        var span = document.createElement('span');
+        span.className = 'storytelling-letter';
+        span.textContent = segment === '' ? ' ' : segment;
+        span.style.filter = 'blur(10px)';
+        span.style.opacity = '0';
+        span.style.transform = 'translateY(' + fromY + 'px)';
+        container.appendChild(span);
+        if (animateBy === 'words' && index < segments.length - 1) {
+          container.appendChild(document.createTextNode(' '));
+        }
+        letters.push(span);
+      });
+
+      function resetToFrom(span) {
+        if (span.getAnimations) {
+          span.getAnimations().forEach(function (anim) { anim.cancel(); });
+        }
+        span.style.filter = 'blur(10px)';
+        span.style.opacity = '0';
+        span.style.transform = 'translateY(' + fromY + 'px)';
+      }
+
+      function trigger() {
+        letters.forEach(resetToFrom);
+        letters.forEach(function (span, index) {
+          span.animate(keyframes, {
+            duration: totalDurationMs,
+            delay: index * delayMs,
+            easing: 'linear',
+            fill: 'forwards'
+          });
+        });
+      }
+
+      return { trigger: trigger };
+    }
+
+    var storytellingContainer = document.getElementById('headlineStorytelling');
+    if (!storytellingContainer) return; // markup not present — stay safe
+
+    window.__storytellingBlur = initBlurText(storytellingContainer, {
+      text: 'Storytelling',
+      animateBy: 'letters',
+      direction: 'top',
+      delay: 200
+    });
+
+    // -----------------------------------------------------------------
+    // Auto-fit sizing (see the STORYTELLING comment in <style> above for
+    // why this word needs it and why you approved it): "Storytelling" is
+    // measured against a ceiling equal to whatever size "tech" is
+    // currently rendering at (read straight from its live computed
+    // font-size, so this always tracks "design"/"tech" exactly instead of
+    // re-deriving their clamp curve a third time), then scaled down only
+    // if it would take up more than 90% of the box's width at that size —
+    // the same 0.9 width fill-factor "design"'s own canvas fit formula
+    // uses (see ensureLayout() above), so both words are "as large as
+    // possible without crowding the box" by the same rule. Measured with
+    // canvas measureText + letterSpacing, the same technique used earlier
+    // to size "tech" against "design" in the first place.
+    // -----------------------------------------------------------------
+    var fitCanvas = document.createElement('canvas');
+    var fitCtx = fitCanvas.getContext('2d');
+
+    function measureStorytellingWidth(fontSizePx) {
+      fitCtx.font = '600 ' + fontSizePx + 'px Inter, sans-serif';
+      if ('letterSpacing' in fitCtx) fitCtx.letterSpacing = '-0.05em';
+      return fitCtx.measureText('Storytelling').width;
+    }
+
+    function layoutStorytelling() {
+      var techEl = document.getElementById('headlineTech');
+      if (!techEl || !storytellingContainer) return;
+      var targetFontSize = parseFloat(getComputedStyle(techEl).fontSize);
+      if (!targetFontSize) return;
+      var naturalWidth = measureStorytellingWidth(targetFontSize);
+      var containerWidth = storytellingContainer.clientWidth || 1;
+      var fitScale = naturalWidth > 0 ? Math.min(1, (containerWidth * 0.9) / naturalWidth) : 1;
+      storytellingContainer.style.fontSize = (targetFontSize * fitScale) + 'px';
+    }
+
+    layoutStorytelling();
+    if (document.fonts) document.fonts.ready.then(layoutStorytelling, layoutStorytelling);
+    var storytellingResizeObserver = new ResizeObserver(layoutStorytelling);
+    storytellingResizeObserver.observe(storytellingContainer);
+  })();
+  </script>
 </body>
 </html>

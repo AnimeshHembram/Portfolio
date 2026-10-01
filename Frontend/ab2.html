@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>About (AB2 experiment) — Animesh Hembram</title>
+<meta name="description" content="Animesh Hembram — Creative Builder working across storytelling, design and tech." />
+<meta name="theme-color" content="#ffffff" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/ab2.css" />
+<!--
+  AB2 — experimental About page. Standalone: nothing else in the portfolio
+  links here yet, and nothing here touches about.html / the dock / shared files.
+
+  How it works (see js/ab2/*.js for detail):
+    1. #ab2-page below is ordinary, accessible HTML. Without JS, with reduced
+       motion, or without WebGL it is simply shown as a flat layout.
+    2. In 3D mode it is moved offscreen, rasterised to a canvas, and that
+       image is projected (like a slide projector) onto 3D blocks built from
+       the layout itself. From the resting camera the result looks exactly
+       like the flat page; scrolling flies the camera and reveals the depth.
+-->
+<script>
+  /* Tiny boot flag so CSS can show the loader instead of flashing the flat
+     layout; the failsafe reveals the flat layout if js/ab2/main.js never runs. */
+  document.documentElement.classList.add("ab2-js");
+  window.__ab2Failsafe = setTimeout(function () {
+    document.documentElement.classList.add("ab2-flat");
+  }, 8000);
+</script>
+</head>
+<body>
+
+  <header class="ab2-bar">
+    <a class="ab2-bar__link" href="index.html">&larr; Home</a>
+    <span class="ab2-bar__tag" aria-hidden="true">About / AB2</span>
+    <button class="ab2-bar__toggle" type="button" id="ab2-toggle" hidden>2D view</button>
+  </header>
+
+  <main class="ab2-host" id="ab2-host">
+    <div class="ab2-page" id="ab2-page">
+
+      <section class="ab2-card" id="ab2-card" aria-labelledby="ab2-name">
+        <div class="ab2-card__top">
+          <h1 class="ab2-card__name" id="ab2-name">Animesh Hembram</h1>
+          <span class="ab2-card__meta" aria-hidden="true">About</span>
+        </div>
+        <p class="ab2-card__lead">I&rsquo;m a Creative Builder who enjoys turning ideas into thoughtful digital experiences.</p>
+        <p class="ab2-card__body">I care about making things simple, purposeful, and visually strong while keeping the identity and character of a brand intact.</p>
+        <p class="ab2-card__body ab2-card__body--extra">I&rsquo;m always ready to learn, experiment, collaborate, and take on work that pushes an idea further.</p>
+      </section>
+
+      <div class="ab2-words">
+        <!-- Slot keeps the same grid row (and height) the old two-line
+             "Story / telling" used, so Design and Tech stay exactly where they
+             were. On desktop the two words inside are positioned against the
+             red card; on phones they stack in this slot. -->
+        <div class="ab2-group ab2-group--a">
+          <h2 class="ab2-kw ab2-kw--story">
+            <span class="ab2-word"><span class="ab2-word__t" data-ab2-word>Storytelling</span><sup class="ab2-idx" aria-hidden="true">01</sup></span>
+          </h2>
+          <h2 class="ab2-kw ab2-kw--research">
+            <span class="ab2-word"><span class="ab2-word__t" data-ab2-word>Research</span><sup class="ab2-idx" aria-hidden="true">02</sup></span>
+          </h2>
+        </div>
+        <h2 class="ab2-group ab2-group--b">
+          <span class="ab2-sr">Design</span>
+          <span class="ab2-word" aria-hidden="true"><span class="ab2-word__t" data-ab2-word>Design</span><sup class="ab2-idx">03</sup></span>
+        </h2>
+        <h2 class="ab2-group ab2-group--c">
+          <span class="ab2-sr">Tech</span>
+          <span class="ab2-word" aria-hidden="true"><span class="ab2-word__t" data-ab2-word>Tech</span><sup class="ab2-idx">04</sup></span>
+        </h2>
+      </div>
+
+      <p class="ab2-hint" aria-hidden="true">Scroll to explore</p>
+    </div>
+  </main>
+
+  <div class="ab2-stage" id="ab2-stage" aria-hidden="true"></div>
+  <div class="ab2-spacer" aria-hidden="true"></div>
+  <div class="ab2-loader" aria-hidden="true"><span class="ab2-loader__box"></span></div>
+
+  <script src="js/ab2/html-to-canvas.js" defer></script>
+  <script src="js/ab2/projector.js" defer></script>
+  <script src="js/ab2/scene.js" defer></script>
+  <script src="js/ab2/main.js" defer></script>
+</body>
+</html>

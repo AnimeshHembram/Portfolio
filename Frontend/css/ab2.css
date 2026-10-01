@@ -1,0 +1,513 @@
+/* =====================================================================
+   AB2 — experimental About page. Used ONLY by ab2.html.
+   Nothing here is shared with about.html, index.html or the dock.
+
+   The same #ab2-page layout serves two jobs:
+     - FLAT mode (no JS / reduced motion / no WebGL / "2D view"): it is the
+       visible page.
+     - 3D mode (html.ab2-3d): it is parked offscreen at exactly one viewport
+       in size and rasterised into the texture projected onto the 3D scene,
+       so every rule below also shapes what the 3D view shows.
+   ===================================================================== */
+
+:root {
+  --ab2-paper: #ffffff;
+  --ab2-ink: #1c1c1c;
+  --ab2-red: #fd453a;          /* reference red box colour */
+  --ab2-card-ink: #111111;     /* 6:1 contrast on --ab2-red */
+  --ab2-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --ab2-word-size: clamp(2.75rem, min(9.5vw, 15vh), 8.5rem);
+  --ab2-pad-x: clamp(1rem, 4vw, 3.5rem);
+  --ab2-pad-top: clamp(4rem, 9vh, 6rem);
+  --ab2-pad-bottom: clamp(3rem, 8vh, 5rem);
+  --ab2-card-size: min(50vw, 26rem, 64vh);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ab2-paper);
+  color: var(--ab2-ink);
+  font-family: var(--ab2-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body { overflow-x: hidden; }
+
+a { color: inherit; }
+
+.ab2-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Top bar (real DOM, never rasterised) ---------- */
+
+.ab2-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(0.9rem, env(safe-area-inset-top)) var(--ab2-pad-x) 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.ab2-bar > * { pointer-events: auto; }
+
+.ab2-bar__link,
+.ab2-bar__toggle {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ab2-ink);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  min-height: 44px;              /* touch target */
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.ab2-bar__link:hover,
+.ab2-bar__toggle:hover {
+  background: var(--ab2-ink);
+  color: var(--ab2-paper);
+  border-color: var(--ab2-ink);
+}
+
+.ab2-bar__link:focus-visible,
+.ab2-bar__toggle:focus-visible {
+  outline: 2px solid var(--ab2-red);
+  outline-offset: 3px;
+}
+
+.ab2-bar__tag { opacity: 0.55; }
+
+.ab2-bar__toggle[hidden] { display: none; }
+
+/* ---------- The page (flat layout + rasterisation source) ---------- */
+
+.ab2-host { display: block; }
+
+.ab2-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--ab2-pad-top) var(--ab2-pad-x) var(--ab2-pad-bottom);
+  background: var(--ab2-paper);
+  color: var(--ab2-ink);
+  overflow: hidden;
+}
+
+.ab2-words {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas: "a" "b" "c";
+  align-content: center;
+  row-gap: clamp(0rem, 4.5vh, 3rem);
+}
+
+.ab2-group {
+  margin: 0;
+  font-size: var(--ab2-word-size);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  display: flex;
+  flex-direction: column;
+}
+
+.ab2-group--a {
+  grid-area: a;
+  justify-self: stretch;
+  height: 1.8em;            /* = the old two-line "Story / telling" row */
+}
+
+.ab2-kw {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+/* Desktop: both keywords are placed against the red card (same geometry the
+   card uses: top 50%, height --ab2-card-size), and the card (z-index 2)
+   sits on top of them.
+   - "Storytelling": one continuous word, centred, straddling the card's top
+     edge so the card hides the lower part of its middle letters.
+   - "Research": to the right of the card, running out to the right margin. */
+.ab2-kw--story {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - var(--ab2-card-size) / 2 - 0.56em);
+  transform: translateX(-50%);
+}
+.ab2-kw--research {
+  position: absolute;
+  right: var(--ab2-pad-x);
+  top: calc(50% - var(--ab2-card-size) / 2 + 0.62em);
+}
+.ab2-group--b { grid-area: b; justify-self: start; }
+.ab2-group--c { grid-area: c; justify-self: end; }
+
+.ab2-word {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  white-space: nowrap;
+}
+
+.ab2-word__t { display: inline-block; padding-right: 0.06em; }
+
+.ab2-idx {
+  font-size: max(0.75rem, 0.1em);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin: 0.5em 0 0 0.3em;
+  opacity: 0.6;
+  vertical-align: baseline;
+  position: static;
+}
+
+/* Central red box */
+.ab2-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  width: var(--ab2-card-size);
+  min-height: var(--ab2-card-size);
+  padding: clamp(1.25rem, 2.4vw, 2rem);
+  background: var(--ab2-red);
+  color: var(--ab2-card-ink);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 1.6vw, 1.5rem);
+}
+
+.ab2-card__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ab2-card__name {
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.375rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.ab2-card__meta {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ab2-card__lead {
+  margin: auto 0 0;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.ab2-card__body {
+  margin: 0;
+  font-size: clamp(0.8125rem, 1vw, 0.95rem);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.ab2-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: none;          /* only meaningful in 3D mode */
+}
+
+/* ---------- Tablet / phone layout ---------- */
+
+@media (max-width: 899px), (max-width: 1100px) and (orientation: portrait) {
+  :root {
+    --ab2-word-size: clamp(2.75rem, min(15vw, 9vh), 7rem);
+    --ab2-card-size: min(76vw, 30rem, 55vh);
+  }
+  /* Phones / portrait tablets / small windows (the desktop composition
+     doesn't fit): "Storytelling" and "Research" at the top, "Design  Tech"
+     along the bottom, so the red box never hides a whole word. */
+  .ab2-words {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "a a" ". ." "b c";
+    grid-template-rows: auto 1fr auto;
+    align-content: stretch;
+  }
+  .ab2-group--b, .ab2-group--c { align-self: end; }
+  /* Keywords stack in the top slot: Storytelling left, Research right. */
+  .ab2-group--a { height: auto; gap: 0.12em; }
+  .ab2-kw--story,
+  .ab2-kw--research { position: static; transform: none; }
+  .ab2-kw--story { align-self: flex-start; }
+  .ab2-kw--research { align-self: flex-end; }
+}
+@media (max-width: 767px) {
+  .ab2-card__body--extra { display: none; }
+}
+
+@media (max-width: 767px) and (max-height: 700px),
+       (max-height: 520px) {
+  .ab2-card__body:not(.ab2-card__body--extra) { font-size: 0.8125rem; }
+  .ab2-card__body--extra { display: none; }
+}
+
+/* Phone landscape: words left and right, card centre */
+@media (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --ab2-word-size: clamp(2.25rem, 13vh, 4rem);
+    --ab2-card-size: min(44vw, 20rem);
+    --ab2-pad-top: 3.75rem;
+    --ab2-pad-bottom: 1.5rem;
+  }
+  .ab2-words {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "a a" ". ." "b c";
+    align-content: stretch;
+  }
+  .ab2-group--a { height: auto; flex-direction: row; justify-content: space-between; gap: 0.5em; }
+  .ab2-kw--story,
+  .ab2-kw--research { position: static; transform: none; }
+  .ab2-group--b, .ab2-group--c { align-self: end; }
+  .ab2-card { min-height: 0; top: calc(50% + 1.1rem); }
+  .ab2-card__lead { margin-top: 0; }
+}
+
+/* ---------- Desktop composition (matches the approved reference) ----------
+   Every position and size is a fraction of S, the red card's size, so the
+   whole composition scales as one locked unit. Numbers were fitted to the
+   reference image (card = 521px there). Coordinates are measured from the
+   card's centre (= page centre). Stacking: white page → words → red card. */
+@media (min-width: 1101px) and (min-height: 521px),
+       (min-width: 900px) and (min-height: 521px) and (orientation: landscape) {
+  :root {
+    --S: min(32.8vw, calc((100vh - 13.75rem) / 1.38));
+    --ab2-card-size: var(--S);
+
+    /* word: font size, box left, box top (all × S, from card centre) */
+    --st-f: 0.296;  --st-x: -1.184; --st-y: -0.689;   /* Storytelling */
+    --re-f: 0.2453; --re-x: 0.4545; --re-y: -0.262;   /* Research     */
+    --de-f: 0.294;  --de-x: -1.39;  --de-y: 0.129;    /* Design       */
+    --te-f: 0.2884; --te-x: 0.483;  --te-y: 0.4786;    /* Tech         */
+    --idx-f: 0.032;                                    /* 01–04 labels */
+  }
+
+  .ab2-group--a { height: auto; }
+
+  .ab2-kw--story,
+  .ab2-kw--research,
+  .ab2-group--b,
+  .ab2-group--c {
+    position: absolute;
+    transform: none;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .ab2-kw--story {
+    font-size: calc(var(--S) * var(--st-f));
+    left: calc(50% + var(--S) * var(--st-x));
+    top: calc(50% + var(--S) * var(--st-y));
+  }
+  .ab2-kw--research {
+    right: auto;
+    font-size: calc(var(--S) * var(--re-f));
+    left: calc(50% + var(--S) * var(--re-x));
+    top: calc(50% + var(--S) * var(--re-y));
+  }
+  .ab2-group--b {
+    font-size: calc(var(--S) * var(--de-f));
+    left: calc(50% + var(--S) * var(--de-x));
+    top: calc(50% + var(--S) * var(--de-y));
+  }
+  .ab2-group--c {
+    font-size: calc(var(--S) * var(--te-f));
+    left: calc(50% + var(--S) * var(--te-x));
+    top: calc(50% + var(--S) * var(--te-y));
+  }
+
+  /* Section numbers, placed as in the reference */
+  .ab2-idx {
+    position: absolute;
+    margin: 0;
+    font-size: calc(var(--S) * var(--idx-f));
+  }
+  .ab2-kw--story .ab2-idx    { left: calc(100% + var(--S) * 0.0104); top: calc(var(--S) * 0.0337); }
+  .ab2-kw--research .ab2-idx { left: calc(100% - var(--S) * 0.023);  top: calc(var(--S) * -0.0108); }
+  .ab2-group--b .ab2-idx     { left: calc(var(--S) * 0.0067);        top: calc(var(--S) * -0.0194); }
+  .ab2-group--c .ab2-idx     { left: calc(100% + var(--S) * 0.0046); top: calc(var(--S) * 0.0154); }
+
+  /* Top bar at the reference's scale */
+  .ab2-bar {
+    font-size: 0.95rem;
+    padding-top: max(1.15rem, env(safe-area-inset-top));
+    padding-left: calc(var(--ab2-pad-x) + 0.3rem);
+    padding-right: calc(var(--ab2-pad-x) + 0.3rem);
+  }
+  .ab2-bar__link,
+  .ab2-bar__toggle { padding: 0.65rem 1.1rem; min-height: 52px; }
+
+  /* Red card internals scale with the card */
+  .ab2-card {
+    top: calc(50% + var(--S) * 0.033);   /* reference card sits slightly below centre */
+    min-height: calc(var(--S) * 1.02);   /* and is a touch taller than wide */
+    padding: calc(var(--S) * 0.081) calc(var(--S) * 0.081) calc(var(--S) * 0.094);
+    gap: calc(var(--S) * 0.053);
+  }
+  .ab2-card__name { font-size: calc(var(--S) * 0.0517); }
+  .ab2-card__meta { font-size: calc(var(--S) * 0.0264); }
+  .ab2-card__lead { font-size: calc(var(--S) * 0.0512); }
+  .ab2-card__body { font-size: calc(var(--S) * 0.0362); line-height: 1.435; letter-spacing: -0.015em; text-wrap: wrap; }
+  .ab2-card__body--extra { text-wrap: pretty; }
+}
+
+/* ---------- Flat mode entrance (skipped for reduced motion) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .ab2-flat .ab2-word__t,
+  .ab2-flat .ab2-card {
+    animation: ab2-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .ab2-flat .ab2-kw--research .ab2-word__t { animation-delay: 0.08s; }
+  .ab2-flat .ab2-group--b .ab2-word__t { animation-delay: 0.16s; }
+  .ab2-flat .ab2-group--c .ab2-word__t { animation-delay: 0.24s; }
+  .ab2-flat .ab2-card { animation-name: ab2-card-in; animation-delay: 0.3s; }
+}
+
+@keyframes ab2-rise {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ab2-card-in {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ---------- Mode switches ---------- */
+
+.ab2-stage,
+.ab2-spacer,
+.ab2-loader { display: none; }
+
+/* JS booting: hold a clean loader instead of flashing the flat layout */
+.ab2-js:not(.ab2-flat):not(.ab2-ready) .ab2-loader {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--ab2-paper);
+}
+
+.ab2-loader__box {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--ab2-red);
+  animation: ab2-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes ab2-pulse {
+  from { transform: scale(0.6) rotate(0deg); }
+  to   { transform: scale(1) rotate(90deg); }
+}
+
+/* 3D mode: page parked offscreen at one exact viewport size (the texture
+   source), canvas fixed on top, tall spacer gives the scroll range. */
+.ab2-3d { scrollbar-width: none; }
+.ab2-3d::-webkit-scrollbar,
+.ab2-3d body::-webkit-scrollbar { display: none; }
+
+.ab2-3d .ab2-host {
+  position: fixed;
+  top: 0;
+  left: -300vw;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ab2-3d .ab2-page {
+  height: 100%;
+  min-height: 0;
+}
+.ab2-3d .ab2-hint { display: block; }
+
+.ab2-3d .ab2-stage {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  z-index: 1;
+}
+.ab2-3d .ab2-stage canvas { display: block; width: 100%; height: 100%; }
+
+.ab2-3d .ab2-spacer {
+  display: block;
+  height: 400vh;
+}
+
+/* Flat mode always wins */
+.ab2-flat .ab2-host {
+  position: static;
+  visibility: visible;
+  width: auto;
+  height: auto;
+  pointer-events: auto;
+}
+.ab2-flat .ab2-stage,
+.ab2-flat .ab2-spacer,
+.ab2-flat .ab2-loader,
+.ab2-flat .ab2-hint { display: none; }

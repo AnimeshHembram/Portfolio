@@ -1,0 +1,896 @@
+/* ---------------------------------------------------------------------
+   Music — page-specific styles
+   ---------------------------------------------------------------------
+   Self-contained: nothing here is shared with css/style.css or any
+   other page's stylesheet. Palette/font follow the same convention as
+   ab2.css and infinite-gallery.css (ink/paper/red + Inter).
+
+   The .gooey-nav-container rules below (and --linear-ease) are the
+   user-supplied GooeyNav component's own CSS, kept as given — this is
+   a vanilla-JS port of a React component, not a redesign, so its visual
+   design/animation is untouched. The only addition is defining
+   --color-1..4, which the component references but didn't itself
+   define. Per the user: grayscale for now (final colors TBD later) —
+   note pure black is deliberately avoided, since the effect's own
+   mix-blend-mode: lighten against a black backdrop (see
+   .effect.filter::before below, also part of the supplied CSS) would
+   render a pure-black particle invisible.
+   ------------------------------------------------------------------- */
+
+:root {
+  --mus-paper: #ffffff;
+  --mus-ink: #1c1c1c;
+  --mus-red: #fd453a;
+  --mus-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* GooeyNav particle colors — grayscale placeholder, see note above */
+  --color-1: #ffffff;
+  --color-2: #d9d9d9;
+  --color-3: #a6a6a6;
+  --color-4: #737373;
+
+  --linear-ease: linear(
+    0,
+    0.068,
+    0.19 2.7%,
+    0.804 8.1%,
+    1.037,
+    1.199 13.2%,
+    1.245,
+    1.27 15.8%,
+    1.274,
+    1.272 17.4%,
+    1.249 19.1%,
+    0.996 28%,
+    0.949,
+    0.928 33.3%,
+    0.926,
+    0.933 36.8%,
+    1.001 45.6%,
+    1.013,
+    1.019 50.8%,
+    1.018 54.4%,
+    1 63.1%,
+    0.995 68%,
+    1.001 85%,
+    1
+  );
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--mus-ink);
+  font-family: var(--mus-font);
+  color: var(--mus-paper);
+}
+
+/* ---- top bar (same pattern as ig-topbar / AB2's own header) ---------- */
+
+.mus-topbar {
+  /* position: fixed already establishes the containing block that an
+     absolutely-positioned child (the nav, below) positions itself
+     against — no separate position: relative needed on top of it. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(1rem, 2.5vw, 1.75rem) clamp(1.25rem, 3vw, 2rem);
+}
+
+/* Why this exists (not a design element — nothing here is visible):
+   position: fixed makes .mus-topbar its own CSS stacking context. The
+   GooeyNav effect's gooey blob look depends on mix-blend-mode: lighten
+   blending a solid-black backdrop (.effect.filter::before, sized to
+   inset: -75px around the active pill — deliberately much bigger than
+   the pill itself, part of the supplied component's own CSS, for the
+   blur/contrast trick that produces the metaball join) against whatever
+   is painted behind it *within that same stacking context* — blending
+   black via "lighten" against a given color reproduces that color
+   exactly, which is how the backdrop disappears into the page.
+   Before the Songs/My Sounds/FM switcher lived in this fixed header, it
+   sat in .mus-main's normal flow, so that blend reached all the way
+   down to the real page background and disappeared correctly. Now that
+   it's here, the blend is scoped to .mus-topbar's own stacking context,
+   and .mus-topbar's own box (just the slim header strip) isn't tall
+   enough to contain that -75px bleed — it spills out above and below
+   the header into an area with nothing painted in this context, which
+   rendered as a plain opaque black rectangle instead of blending away.
+   This oversized, invisible backdrop (same color the page already is,
+   sitting behind the header's real content via z-index: -1) gives the
+   blend a correct backdrop across that area instead, with no change to
+   how the header itself looks or behaves.
+
+   The bottom side is intentionally NOT sized the same generous -150px
+   as the other three sides. .mus-topbar is position: fixed and stacks
+   (z-index: 10) above the normal page flow underneath it — including
+   the cassette player's own artwork, which sits well within 150px of
+   the header on shorter/narrower layouts. A -150px reach there painted
+   this "invisible" (background-colored) rectangle straight over the
+   top of the cassette's artwork: same color as the page, so nothing
+   looked "wrong" here, but it silently hid the top of a real, visible
+   element below (confirmed by disabling this pseudo-element entirely
+   and seeing the cassette's full artwork appear). pointer-events: none
+   only stops it from intercepting clicks on whatever it overlaps — it
+   does nothing to stop it from painting over that content.
+   Measured across the header's own responsive sizing (390–1920px), the
+   gooey effect's own particles/blend never reach more than ~64px below
+   the header's bottom edge, while the cassette's own top edge is never
+   closer than that; -70px covers the effect with margin at every width
+   this site targets without reaching far enough to paint over the
+   player. If a future change moves page content closer beneath the
+   header, re-measure both before adjusting this value. */
+.mus-topbar::before {
+  content: "";
+  position: absolute;
+  top: -150px;
+  right: -150px;
+  left: -150px;
+  bottom: -70px;
+  background: var(--mus-ink);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.mus-topbar__home {
+  color: var(--mus-paper);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mus-topbar__home:hover,
+.mus-topbar__home:focus-visible {
+  background: rgba(253, 69, 58, 0.85);
+  transform: translateY(-1px);
+}
+
+.mus-topbar__home:focus-visible {
+  outline: 2px solid var(--mus-paper);
+  outline-offset: 2px;
+}
+
+/* Songs / My Sounds / FM now lives IN the header, on the same row as
+   Home, not underneath it. Home stays a normal flex child (left side,
+   via .mus-topbar's own display:flex); the nav is taken out of that
+   flow and centered independently against the header itself:
+     left: 50%; transform: translateX(-50%)  → horizontal center of the
+       header's box, which spans left:0/right:0 (the full viewport), so
+       this is viewport-center, not "center of the space left after
+       Home".
+     top: 50%; transform: translateY(-50%)   → vertical center of the
+       header's own box — the same box Home is vertically centered in
+       via .mus-topbar's align-items: center — so both land on exactly
+       the same centerline regardless of either element's own height.
+   This replaces the earlier (incorrect) approach of placing the nav in
+   .mus-main's normal document flow below the header. */
+/* #musicNav (ID, not the .mus-topbar__nav class) is deliberate here: the
+   shared GooeyNav CSS below sets `.gooey-nav-container { position:
+   relative }` at equal class-selector specificity, and since that block
+   comes later in this file, a same-specificity class rule here would
+   lose to it in the cascade and silently stop being "absolute" at all.
+   The ID wins regardless of source order, which is what actually makes
+   this positioning take effect. */
+#musicNav {
+  position: absolute;
+  /* Centered on both axes using the left/right/top/bottom + auto-margin
+     technique instead of `transform: translate(-50%, -50%)`. Either
+     technique centers the nav correctly; this one is used simply because
+     it doesn't add a transform on top of what .mus-topbar already needs
+     (see the background note on .mus-topbar above for the actual cause
+     and fix of this component's black-backdrop rendering bug — that
+     turned out to live one level up, not here). */
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  width: max-content;
+  height: max-content;
+  /* At very narrow widths, an unconstrained max-content width can
+     exceed the viewport; cap it so the safety-net flex-wrap (in the
+     shared GooeyNav rules below) has something to actually wrap within
+     instead of overflowing. */
+  max-width: calc(100vw - 1rem);
+}
+
+/* ---- page layout ------------------------------------------------------- */
+
+.mus-main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(5rem, 12vh, 7rem) clamp(1.25rem, 4vw, 2rem) clamp(2rem, 6vh, 3rem);
+}
+
+.mus-panels {
+  width: min(640px, 100%);
+}
+
+.mus-panel {
+  width: 100%;
+}
+
+.mus-panel[hidden] {
+  display: none;
+}
+
+/* ---- Songs: Cassette Player ---------------------------------------------
+   Vanilla port of the user-supplied CassettePlayer reference (Codrops'
+   "Old School Cassette Player with HTML5 Audio" — jquery.cassette.js +
+   knobKnob.jquery.js). The vc- and knob rules below this comment are that
+   reference's own CSS (style.css + knobKnob.css), kept as given — this
+   is a port, not a redesign — with only two kinds of change: dropped
+   legacy vendor-prefixed/IE-only declarations that do nothing in a
+   current browser (prefixed transforms, prefixed @keyframes, prefixed
+   gradient syntax, the `filter: progid:...` IE gradient hack), and
+   image/font paths rewritten to point at the reference's own existing
+   location (assets/New folder/CassettePlayer/…) instead of being copied
+   here — see js/music/main.js and cassette-player.js for the same
+   decision on the audio assets. The player mechanics live in
+   js/music/cassette-player.js.
+
+   .mus-cassette / .mus-cassette__stage are new, and are NOT part of the
+   ported reference: the widget's own CSS below assumes its original
+   ~672px-wide canvas (that's what the control bar's centering and the
+   volume knob's left-offset math are measured against), so reflowing it
+   at narrow widths would distort the design. Instead .mus-cassette__stage
+   keeps that natural size and js/music/main.js scales it down as a whole
+   (via a plain CSS transform, never touching the widget's own layout
+   rules) to fit whatever width the Songs panel has. */
+
+.mus-cassette {
+  width: 100%;
+  overflow: hidden;
+  /* Flex-centering rather than the stage's own margin: 0 auto: auto
+     margins only center a box that's narrower than its container — once
+     the (scaled-down) 672px stage is wider than this panel, auto margins
+     clamp to 0 and the box sits flush left, overflowing only on the
+     right. That silently shifted the whole widget off-center and behind
+     this element's own overflow: hidden at narrow widths (390px and
+     below) — half the cassette was being clipped away, not just scaled
+     down. Flex justify-content: center keeps it symmetrically centered
+     (equal overflow both sides) at any width, which the scale transform
+     below then shrinks from correctly. */
+  display: flex;
+  justify-content: center;
+}
+
+.mus-cassette__stage {
+  width: 672px;
+  /* Prevent flexbox's own flex-shrink from resizing this before our
+     script gets to it — the JS-driven transform: scale(), not flexbox,
+     is what's responsible for fitting this to the panel. */
+  flex: none;
+  padding: 30px 0;
+  transform-origin: top center;
+}
+
+.mus-cassette__note {
+  margin: 1.5rem auto 0;
+  max-width: 32rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@font-face {
+  font-family: "playericons";
+  src: url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.eot?#iefix") format("embedded-opentype"), url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.woff") format("woff"),
+    url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.ttf") format("truetype"), url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.svg#playericons") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* ---- vc-* (tape + controls) — adapted from the reference's style.css --- */
+
+.vc-container {
+  text-align: center;
+  height: 500px;
+  position: relative;
+}
+
+.vc-tape-wrapper {
+  perspective: 800px;
+}
+
+.vc-tape {
+  width: 586px;
+  height: 379px;
+  margin: 30px auto 0;
+  position: relative;
+  transition: all 0.4s ease-in-out;
+}
+
+.vc-loader {
+  position: absolute;
+  width: 31px;
+  height: 31px;
+  bottom: 50px;
+  left: 50%;
+  margin: -15px 0 0 -15px;
+  background: transparent url("../assets/New%20folder/CassettePlayer/images/ajax-loader.gif") no-repeat center center;
+  display: none;
+}
+
+.vc-tape-back {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_back.png") no-repeat center center;
+}
+
+.vc-tape-wheel {
+  width: 125px;
+  height: 125px;
+  position: absolute;
+  top: 110px;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.vc-tape-wheel-left {
+  left: 109px;
+  box-shadow: 0 0 0 70px #000;
+}
+
+.vc-tape-wheel-right {
+  right: 113px;
+}
+
+@keyframes rotateLeft {
+  0% {
+    transform: rotate(0deg) translateZ(-1px);
+  }
+  100% {
+    transform: rotate(-360deg) translateZ(-1px);
+  }
+}
+
+@keyframes rotateRight {
+  0% {
+    transform: rotate(0deg) translateZ(-1px);
+  }
+  100% {
+    transform: rotate(360deg) translateZ(-1px);
+  }
+}
+
+.vc-tape-wheel div {
+  width: 100%;
+  height: 100%;
+  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_wheel.png") no-repeat center center;
+}
+
+.vc-tape-front {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_front.png") no-repeat center center;
+  top: 0;
+  left: 0;
+}
+
+.vc-tape-side-b {
+  display: none;
+  transform: rotate3d(0, 1, 0, 180deg);
+}
+
+.vc-tape-front span {
+  color: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  top: 83px;
+  left: 67px;
+  font-family: Arial;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+ul.vc-controls {
+  list-style: none;
+  padding: 8px;
+  width: 440px;
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  margin: 0 0 0 -170px;
+  background: linear-gradient(to bottom, rgba(170, 170, 170, 0.35) 0%, rgba(255, 255, 255, 0.44) 50%, rgba(255, 255, 255, 0.53) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+  height: 54px;
+  box-shadow: inset 0 1px 0px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 0 rgba(255, 255, 255, 0.4), inset 0 2px 19px rgba(0, 0, 0, 0.05), 0 2px 1px rgba(0, 0, 0, 0.06);
+  box-sizing: content-box;
+  border-radius: 12px;
+}
+
+ul.vc-controls li {
+  display: block;
+  float: left;
+  width: 80px;
+  height: 50px;
+  line-height: 55px;
+  text-align: left;
+  padding: 10px;
+  margin: 0;
+  cursor: pointer;
+  background: #ddd url("../assets/New%20folder/CassettePlayer/images/metal.jpg") no-repeat center top;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -6px 5px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 4px 1px rgba(0, 0, 0, 0.5);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+ul.vc-controls li:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+ul.vc-controls li:last-child {
+  border-radius: 0px 8px 8px 0px;
+}
+
+ul.vc-controls li.vc-control-play {
+  width: 120px;
+}
+
+ul.vc-controls li span:before {
+  font-size: 16px;
+  line-height: 50px;
+  text-align: center;
+  float: left;
+  color: #444;
+  font-family: "playericons";
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
+  font-style: normal;
+  font-weight: normal;
+  text-transform: none;
+  speak: none;
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: 0.2em;
+}
+
+li.vc-control-pause span:before {
+  content: "\50";
+}
+li.vc-control-fforward span:before {
+  content: "\23e9";
+}
+li.vc-control-rewind span:before {
+  content: "\23ea";
+}
+li.vc-control-stop span:before {
+  content: "\25aa";
+}
+li.vc-control-play span:before {
+  content: "\70";
+}
+li.vc-control-volume-off span:before {
+  content: "\1f507";
+}
+li.vc-control-volume-down span:before {
+  content: "\1f509";
+}
+li.vc-control-volume-up span:before {
+  content: "\1f50a";
+}
+
+ul.vc-controls li:hover {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -10px 15px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 4px 1px rgba(0, 0, 0, 0.5);
+}
+
+ul.vc-controls li.vc-control-active {
+  height: 50px;
+  margin-top: 2px;
+  background-image: url("../assets/New%20folder/CassettePlayer/images/metal_dark.jpg");
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), inset 0 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -6px 5px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 2px 1px rgba(0, 0, 0, 0.5);
+}
+
+ul.vc-controls li.vc-control-pressed,
+ul.vc-controls li.vc-control-active.vc-control-pressed {
+  height: 50px;
+  background-image: url("../assets/New%20folder/CassettePlayer/images/metal_dark.jpg");
+  margin-top: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 5px 1px rgba(255, 255, 255, 0.5), inset 0 -10px 15px rgba(0, 0, 0, 0.2), 0 7px 5px rgba(255, 255, 255, 0.5);
+}
+
+.vc-volume-wrap {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  margin-left: -318px;
+  background: linear-gradient(to bottom, rgba(170, 170, 170, 0.35) 0%, rgba(255, 255, 255, 0.44) 50%, rgba(255, 255, 255, 0.53) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  padding: 8px;
+  box-shadow: inset 0 1px 0px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.6), 0 -1px 0 rgba(255, 255, 255, 0.4), inset 0 2px 19px rgba(0, 0, 0, 0.05), 0 2px 1px rgba(0, 0, 0, 0.06);
+  box-sizing: content-box;
+}
+
+.vc-volume-wrap:after {
+  content: "Volume";
+  margin-top: 15px;
+  display: block;
+}
+
+ul.vc-controls li,
+.vc-volume-wrap:after {
+  font-family: var(--mus-font);
+  font-size: 10px;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #666;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+/* ---- knob (volume dial) — adapted from the reference's knobKnob.css --- */
+
+.knob {
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+.knob .top {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url("../assets/New%20folder/CassettePlayer/images/knob.jpg") no-repeat center center;
+  z-index: 10;
+  cursor: default !important;
+  border-radius: 50%;
+  box-shadow: inset 0 0 3px 2px rgba(255, 255, 255, 0.6);
+}
+
+.knob .base {
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 5px 0 #555, 0px 5px 5px black;
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+}
+
+.knob .top:after {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background-color: #666;
+  position: absolute;
+  top: 50%;
+  margin-top: -2px;
+  left: 4px;
+  border-radius: 50%;
+  cursor: default !important;
+  box-shadow: 0 0 1px #5a5a5a inset, 1px -1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.knob [draggable] {
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .mus-cassette__note {
+    font-size: 0.75rem;
+  }
+}
+
+/* ---- My Sounds / FM placeholders ---------------------------------------- */
+
+.mus-empty {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mus-empty p {
+  margin: 0;
+}
+
+.mus-empty p:first-child {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mus-paper);
+}
+
+.mus-empty__hint {
+  margin-top: 0.5rem !important;
+  max-width: 30rem;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400 !important;
+}
+
+/* ---- responsive tweaks --------------------------------------------------- */
+
+@media (max-width: 640px) {
+  /* Tighter gap/padding so the now-nowrap "Songs / My Sounds / FM" row
+     stays clear of the Home button and doesn't overflow narrow phone
+     widths (this scales the same layout down, not a redesign of it). */
+  .gooey-nav-container nav ul {
+    gap: 0.5em;
+    padding: 0 0.35em;
+  }
+
+  .gooey-nav-container nav ul li a {
+    padding: 0.5em 0.6em;
+    font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mus-topbar__home {
+    transition: none;
+  }
+}
+
+/* =======================================================================
+   GooeyNav — user-supplied component CSS, unmodified (see file header)
+   ======================================================================= */
+
+.gooey-nav-container {
+  position: relative;
+}
+
+.gooey-nav-container nav {
+  display: flex;
+  position: relative;
+  transform: translate3d(0, 0, 0.01px);
+}
+
+.gooey-nav-container nav ul {
+  display: flex;
+  flex-wrap: wrap; /* safety net for very narrow phones (~320px): lets a
+    third item drop to its own row instead of overflowing the viewport.
+    Never triggers at any width this nav actually has room at, so it
+    doesn't change the design anywhere it currently fits on one line. */
+  justify-content: center;
+  align-items: center; /* not in the original snippet — without it, flex's
+    default align-items: stretch makes every <li> match the row's tallest
+    item, which only matters once an item's label wraps to two lines (see
+    the nowrap rule below for why that happened here); centering instead
+    of stretching is what keeps the real link and its floating text clone
+    aligned regardless. */
+  gap: 2em;
+  list-style: none;
+  padding: 0 1em;
+  margin: 0;
+  position: relative;
+  z-index: 3;
+  color: white;
+  text-shadow: 0 1px 1px hsl(205deg 30% 10% / 0.2);
+}
+
+.gooey-nav-container nav ul li {
+  border-radius: 100vw;
+  position: relative;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
+  box-shadow: 0 0 0.5px 1.5px transparent;
+  color: white;
+}
+
+.gooey-nav-container nav ul li a {
+  display: inline-block;
+  padding: 0.6em 1em;
+  /* Not in the user-supplied CSS — without this, the <a> falls back to
+     the browser's default link color/underline, which visibly clashes
+     with the rest of the component's white/black gooey-pill look. A
+     typical app already has a global `a { color: inherit }` reset;
+     this snippet didn't include one, so it's added here, scoped to
+     this component only — not a redesign, just completing what the
+     rest of this same ruleset (ul { color: white }, .active styling,
+     etc.) already assumes. */
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap; /* "My Sounds" is two words — without this it can
+    wrap onto two lines at narrow widths, which is what triggered the
+    stretch issue fixed above in the first place. */
+  -webkit-tap-highlight-color: transparent; /* suppresses the browser's
+    default blue tap-highlight box on mobile Chrome, which isn't part of
+    the component's own design */
+}
+
+.gooey-nav-container nav ul li a:focus {
+  /* Suppresses the browser's own default focus outline (blue in
+     Chromium), which isn't part of the component's design either — the
+     :focus-within:has(:focus-visible) rule right below already provides
+     a real, visible keyboard-focus indicator (a white box-shadow on the
+     parent <li>), so accessibility isn't lost here, just the redundant/
+     stray default outline. */
+  outline: none;
+}
+
+.gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
+  box-shadow: 0 0 0.5px 1.5px white;
+}
+
+.gooey-nav-container nav ul li::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: white;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.gooey-nav-container nav ul li.active {
+  color: black;
+  text-shadow: none;
+}
+
+.gooey-nav-container nav ul li.active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.gooey-nav-container .effect {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 1;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.gooey-nav-container .effect.text {
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.gooey-nav-container .effect.text.active {
+  color: black;
+}
+
+.gooey-nav-container .effect.filter {
+  filter: blur(7px) contrast(100) blur(0);
+  mix-blend-mode: lighten;
+}
+
+.gooey-nav-container .effect.filter::before {
+  content: "";
+  position: absolute;
+  inset: -75px;
+  z-index: -2;
+  background: black;
+}
+
+.gooey-nav-container .effect.filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: white;
+  transform: scale(0);
+  opacity: 0;
+  z-index: -1;
+  border-radius: 100vw;
+}
+
+.gooey-nav-container .effect.active::after {
+  animation: pill 0.3s ease both;
+}
+
+@keyframes pill {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.particle,
+.point {
+  display: block;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  transform-origin: center;
+}
+
+.particle {
+  --time: 5s;
+  position: absolute;
+  top: calc(50% - 8px);
+  left: calc(50% - 8px);
+  animation: particle calc(var(--time)) ease 1 -350ms;
+}
+
+.point {
+  background: var(--color);
+  opacity: 1;
+  animation: point calc(var(--time)) ease 1 -350ms;
+}
+
+@keyframes particle {
+  0% {
+    transform: rotate(0deg) translate(calc(var(--start-x)), calc(var(--start-y)));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  70% {
+    transform: rotate(calc(var(--rotate) * 0.5)) translate(calc(var(--end-x) * 1.2), calc(var(--end-y) * 1.2));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+
+  85% {
+    transform: rotate(calc(var(--rotate) * 0.66)) translate(calc(var(--end-x)), calc(var(--end-y)));
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
+    opacity: 1;
+  }
+}
+
+@keyframes point {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  25% {
+    transform: scale(calc(var(--scale) * 0.25));
+  }
+
+  38% {
+    opacity: 1;
+  }
+
+  65% {
+    transform: scale(var(--scale));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+
+  85% {
+    transform: scale(var(--scale));
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}

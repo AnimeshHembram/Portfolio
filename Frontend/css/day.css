@@ -1,0 +1,22 @@
+/* ================================================================
+   DAY UI PREVIEW — preview-only stylesheet
+   ----------------------------------------------------------------
+   day.html links this AFTER css/style.css. Deliberately not a copy
+   of any Day UI rules: the cursor, loader, .desktop--day, .day-shader-bg
+   and dock rules all already live in css/style.css, and day.html loads
+   that same file directly — so the preview can never drift from the
+   live site's actual look without someone noticing here, because
+   there's nothing duplicated to drift.
+
+   This file exists as the place for rules that are ONLY meaningful
+   for the standalone preview itself (never for the live site), which
+   is why it's currently empty of rules. data-mode="day" is set
+   statically in day.html's <html> tag, which is enough on its own to
+   satisfy css/style.css's existing
+   [data-mode="day"] .desktop--day { display: block; } rule — no
+   preview-specific override has been needed.
+
+   Leave real Day UI styling out of this file. If a Day UI rule needs
+   to change, change it in css/style.css so index.html and day.html
+   both pick it up automatically.
+   ================================================================ */

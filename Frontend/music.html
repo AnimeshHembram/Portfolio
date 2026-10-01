@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Music — Animesh Hembram</title>
+<meta name="description" content="Songs, original sounds, and an FM-style radio experience." />
+<meta name="theme-color" content="#1c1c1c" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/music.css" />
+<!--
+  Music — PHASE 1: frontend only.
+
+  Standalone page, own stylesheet (css/music.css) and own scripts
+  (js/music/*.js), loaded as plain classic <script> tags — no build
+  step, no framework, matching every other page in this portfolio and
+  specifically NOT type="module" (see the Infinite Gallery's own notes
+  on why: this portfolio is opened via file://, which blocks
+  module-to-module imports).
+
+  js/music/gooey-nav.js is a vanilla-JS port of a React "GooeyNav"
+  component the user supplied — same visual design and particle
+  animation, rewritten off React hooks/JSX the same way the Infinite
+  Gallery's Three.js code was ported off React-Three-Fiber. Here it
+  drives the in-page Songs / My Sounds / FM switcher below instead of
+  real page navigation.
+
+  Phase 1 scope only: this page establishes the three sections as UI
+  shells the algorithm (Phase 2) and Backend resource system (Phase 3)
+  will plug into later. No music-selection algorithm, no FM/location
+  logic, and no Backend resources are wired up yet — see
+  js/music/main.js. No commercial songs are embedded or downloaded.
+
+  Nothing here touches AB2, the Infinite Gallery, the homepage, or any
+  other page/script/stylesheet. The dock's existing "Music" icon
+  (js/dock.js) gains one small, additive block linking it to this page
+  — the same minimal pattern used for "About Me" and "Gallery".
+-->
+</head>
+<body>
+
+  <header class="mus-topbar">
+    <a class="mus-topbar__home" href="index.html">&larr; Home</a>
+    <div class="gooey-nav-container mus-topbar__nav" id="musicNav" role="tablist" aria-label="Music sections"></div>
+  </header>
+
+  <main class="mus-main">
+    <div class="mus-panels">
+      <section class="mus-panel" id="panel-songs" role="tabpanel" aria-labelledby="tab-songs">
+        <!--
+          Cassette Player (Songs) — Phase 1 UI/mechanics only.
+
+          Vanilla port of the user-supplied CassettePlayer reference
+          (Codrops' "Old School Cassette Player with HTML5 Audio"). The
+          .mus-cassette__stage keeps the widget's own natural 672px-wide
+          layout intact (same coordinate system the original CSS assumes
+          for the tape, controls bar and volume knob) and js/music/main.js
+          scales that stage down as a whole to fit narrower panels/
+          viewports — no reflow, no distortion, no horizontal overflow.
+
+          #vc-container's tape markup is static here (matching the
+          original demo's own HTML); js/music/cassette-player.js injects
+          the <audio> element, the control buttons and the volume knob
+          into it at runtime, then drives all of it. See that file for
+          what was ported vs. deliberately dropped (jQuery, the legacy
+          transform.js/Modernizr shims).
+
+          Songs/sounds are referenced directly from
+          assets/New folder/CassettePlayer/ rather than copied — see
+          cassette-player.js's init call in main.js for the four
+          placeholder tracks (temporary; real library lands in Phase 3).
+        -->
+        <div class="mus-cassette">
+          <div class="mus-cassette__stage">
+            <div id="vc-container" class="vc-container">
+              <div class="vc-tape-wrapper">
+                <div class="vc-tape">
+                  <div class="vc-tape-back">
+                    <div class="vc-tape-wheel vc-tape-wheel-left"><div></div></div>
+                    <div class="vc-tape-wheel vc-tape-wheel-right"><div></div></div>
+                  </div>
+                  <div class="vc-tape-front vc-tape-side-a">
+                    <span>A</span>
+                  </div>
+                  <div class="vc-tape-front vc-tape-side-b">
+                    <span>B</span>
+                  </div>
+                </div>
+              </div>
+              <div class="vc-loader"></div>
+            </div>
+          </div>
+        </div>
+        <p class="mus-cassette__note">Demo tracks only, temporarily standing in for the player mechanics. Your Indian &amp; English song library (Phase 2) and Backend resources (Phase 3) will replace these.</p>
+      </section>
+
+      <section class="mus-panel" id="panel-my-sounds" role="tabpanel" aria-labelledby="tab-my-sounds" hidden>
+        <div class="mus-empty">
+          <p>Nothing here yet.</p>
+          <p class="mus-empty__hint">Original songs, sound-design tracks and audio experiments will appear here once this section is connected to the Backend resource system in Phase 3.</p>
+        </div>
+      </section>
+
+      <section class="mus-panel" id="panel-fm" role="tabpanel" aria-labelledby="tab-fm" hidden>
+        <div class="mus-empty">
+          <p>FM isn&rsquo;t tuned in yet.</p>
+          <p class="mus-empty__hint">A location-based radio experience will be designed separately in Phase 2.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/music/gooey-nav.js" defer></script>
+  <script src="js/music/cassette-player.js" defer></script>
+  <script src="js/music/main.js" defer></script>
+</body>
+</html>

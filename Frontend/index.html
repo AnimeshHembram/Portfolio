@@ -70,6 +70,22 @@
         if (override === "night") isDay = false;
         applyMode(isDay);
 
+        // Manual "Switch" dock button — flips the mode immediately and
+        // stops the clock-based auto-recheck below from fighting it for
+        // the rest of this page load (mirrors how the ?mode= URL param
+        // already disables that loop, just triggered by a click instead
+        // of a query string, and without needing a reload). Not persisted
+        // across reloads — a fresh load always starts from the real
+        // clock again, same as before this button existed.
+        var manualOverride = false;
+        document.addEventListener("click", function (e) {
+          var slot = e.target.closest && e.target.closest("#dockSwitchBtn");
+          if (!slot) return;
+          isDay = !isDay;
+          manualOverride = true;
+          applyMode(isDay);
+        });
+
         if (!override) {
           var currentIsDay = isDay;
 
@@ -89,6 +105,7 @@
           }
 
           function recheck() {
+            if (manualOverride) return; // user took manual control — clock stands down
             var nowIsDay = computeIsDay();
             if (nowIsDay !== currentIsDay) {
               currentIsDay = nowIsDay;
@@ -116,21 +133,23 @@
 
     <!-- Hover hotspots: hidden text reveals only on hover -->
     <div class="hotspot hotspot-works" data-title="Works" data-desc="A look at recent projects and case studies."></div>
-    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do." data-href="about.html"></div>
+    <div class="hotspot hotspot-about" data-title="About me" data-desc="Who I am and what I do." data-href="ab2.html"></div>
     <div class="hotspot hotspot-socials-1" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
     <div class="hotspot hotspot-socials-2" data-title="Socials" data-desc="GitHub, LinkedIn, Instagram and Gmail."></div>
     <div class="hotspot hotspot-more" data-title="More" data-desc="A few extra bits and links."></div>
     <div class="hotspot hotspot-music" data-title="Music On/Off" data-desc="Toggle background music."></div>
     <div class="hotspot hotspot-open-to-work" data-title="Open to work" data-desc="Available for new roles and projects."></div>
     <div class="hotspot hotspot-coffee" data-title="Buy me a Coffee" data-desc="Support the work with a coffee."></div>
+
   </main>
 
   <!-- ================================================================
        DAY DESKTOP — VISUAL FOUNDATION, matched to the approved Figma
        reference (terracotta → mauve → periwinkle gradient shader
-       background, text-based widgets). The desktop icons and dock that
-       used to live here were removed in Phase 2.5, to be rebuilt from
-       scratch in a later phase. Still no dragging or window manager.
+       background). The desktop icons and dock that used to live here
+       were removed in Phase 2.5, to be rebuilt from scratch in a later
+       phase; the weather/date/clock widget cluster was later removed
+       at the user's request. Still no dragging or window manager.
        Hidden unless <html data-mode="day">; defaults to hidden, so a
        scripting failure can never accidentally hide the night UI.
        ================================================================ -->
@@ -138,29 +157,15 @@
 
     <!-- Full-viewport WebGL background effect (js/day-background.js) —
          the day desktop's base visual layer, replacing the aurora overlay.
-         Sits below the widgets (z-index), pointer-events
-         disabled. The gradient declared on .desktop--day below stays in
-         the CSS as a fallback: if WebGL is unavailable or the visitor has
+         z-index 0, pointer-events disabled, so it never blocks a click.
+         The gradient declared on .desktop--day below stays in the CSS as
+         a fallback: if WebGL is unavailable or the visitor has
          prefers-reduced-motion on, this canvas hides itself and that
          gradient is what's seen instead. -->
     <canvas id="webgl-canvas" class="day-shader-bg" aria-hidden="true"></canvas>
 
-    <!-- Widget cluster (top-right) — real text content in glass cards,
-         styled to match the Figma reference. Placeholder text only;
-         no live weather/time data yet. -->
-    <div class="widget-cluster" id="widgetCluster">
-      <div class="widget widget--weather">
-        <p class="widget-text">It's 3° now in Tokyo. Will be rainy and cold.</p>
-      </div>
-      <div class="widget widget--date">
-        <span class="widget-line widget-line--big">29</span>
-        <span class="widget-line widget-line--small">2024</span>
-      </div>
-      <div class="widget widget--clock">
-        <span class="widget-line widget-line--small">Sun 15</span>
-        <span class="widget-line widget-line--big">22:04</span>
-      </div>
-    </div>
+    <!-- Widget cluster (weather/date/clock, top-right) removed at the
+         user's request, along with its dedicated CSS in style.css. -->
 
   </div>
 
@@ -170,28 +175,40 @@
     <span class="hover-label-desc" id="hoverDesc"></span>
   </div>
 
-  <!-- Dock (Phase 3.2) — real icons on the structure/magnification
-       foundation from Phase 3.1. Every icon is a .dock-slot picked up
-       generically by js/dock.js (nothing there is hardcoded to a
-       count), grouped into four sets with a .dock-divider between
-       them; dividers use a different class so js/dock.js's
-       querySelectorAll('.dock-slot') skips them automatically and
-       they never magnify. GitHub, LinkedIn and Gmail are real links
-       (recovered from this project's own pre-Phase-2.5 markup, which
-       had them wired up before the old dock was removed); the rest
-       stay non-interactive divs until a later pass adds their links.
-       Shared by both day and night mode: this sits at body level,
-       outside #desktopDay, so it's identical and always visible
-       regardless of data-mode. -->
+  <!-- Dock (Phase 3.2, icons; Phase 3.3, night-mode hide/reveal) — real
+       icons on the structure/magnification foundation from Phase 3.1.
+       Every icon is a .dock-slot picked up generically by js/dock.js
+       (nothing there is hardcoded to a count), grouped into four sets
+       with a .dock-divider between them; dividers use a different
+       class so js/dock.js's querySelectorAll('.dock-slot') skips them
+       automatically and they never magnify. GitHub, LinkedIn and
+       Gmail are real links (recovered from this project's own
+       pre-Phase-2.5 markup, which had them wired up before the old
+       dock was removed); the rest stay non-interactive divs until a
+       later pass adds their links.
+
+       #dockHoverZone is the new Phase 3.3 wrapper: a single fixed
+       hit-test region spanning the dock + the empty space below it
+       down to the very bottom edge. js/dock.js binds mouseenter/
+       mouseleave/focusin/focusout to THIS element, not to the dock or
+       a separate hotspot div, specifically so moving the cursor
+       between the empty "hotspot" area and the dock itself (or
+       between dock icons) never crosses this element's own boundary —
+       mouseenter/mouseleave only fire on true entry/exit of the zone,
+       so there's no gap-crossing flicker to guard against with extra
+       state. The hide/reveal CSS this drives is scoped to
+       [data-mode="night"] only — day mode's dock stays exactly as
+       before (always visible, untouched by any of this). Shared by
+       both day and night mode at the DOM level: this sits at body
+       level, outside #desktopDay, so the same markup renders in both;
+       only the CSS visibility behavior differs by mode. -->
+  <div class="dock-hover-zone" id="dockHoverZone">
   <div class="dock-wrapper" id="dockWrapper">
     <div class="dock" id="dock">
 
       <!-- PERSONAL -->
       <div class="dock-slot" data-dock-slot data-tooltip="About Me">
         <img src="assets/icons/aboutme.png" alt="About Me" class="dock-icon-img" draggable="false">
-      </div>
-      <div class="dock-slot" data-dock-slot data-tooltip="Readme File">
-        <img src="assets/icons/readme file.png" alt="Readme File" class="dock-icon-img" draggable="false">
       </div>
       <div class="dock-slot" data-dock-slot data-tooltip="Resume">
         <img src="assets/icons/resum.png" alt="Resume" class="dock-icon-img" draggable="false">
@@ -233,7 +250,33 @@
         <img src="assets/icons/player.png" alt="Music" class="dock-icon-img" draggable="false">
       </div>
 
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- UTILITY — manual day/night switch. index.html only; day.html
+           and night.html are static single-mode previews with no clock
+           logic to toggle, so this slot isn't in their dock markup.
+           Markup is the Uiverse.io "Liquid" gradient button the user
+           supplied, unchanged structurally; see css/style.css for how
+           its sizing was adapted to dock-icon scale. Click handling
+           lives in this page's own inline script below, next to the
+           day/night detection it drives. -->
+      <div class="dock-slot dock-slot--switch" data-dock-slot data-tooltip="Switch" id="dockSwitchBtn">
+        <div class="btn-wrapper">
+          <div class="light"></div>
+          <div class="gradient-layer" style="animation-delay: 0s; animation-duration: 25s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.15s; animation-duration: 15.9s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.53s; animation-duration: 26.4s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.45s; animation-duration: 17.8s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 19.2s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 29.2s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 20.2s;"></div>
+          <button type="button" class="gradient-btn" aria-label="Switch day and night mode">Switch</button>
+          <div class="text-overlay" aria-hidden="true">Switch</div>
+        </div>
+      </div>
+
     </div>
+  </div>
   </div>
 
   <script src="js/main.js" defer></script>

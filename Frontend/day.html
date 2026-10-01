@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animesh Hembram — Portfolio (Day UI Preview)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+  <!-- Shared stylesheet — the SAME file index.html and night.html use.
+       Deliberately not copied: the dock, cursor and loader rules in here
+       need to stay identical to the live site, and loading the real file
+       is what guarantees that (a copy would drift the moment style.css
+       changes and this file doesn't). The Night-only rules it also
+       contains (.landing, .hotspot*, .hover-label*, .switch-btn, and the
+       [data-mode="night"]-scoped dock reveal block) simply match nothing
+       here, since this page never sets data-mode="night" and never
+       includes that markup — harmless. -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Day-preview-only stylesheet — see css/day.css for why it's
+       currently near-empty. -->
+  <link rel="stylesheet" href="css/day.css" />
+</head>
+<body>
+
+  <!-- Custom cursor (shared with index.html/night.html via css/style.css + js/main.js) -->
+  <div class="cursor" id="cursor"></div>
+
+  <!-- LOADING PAGE (shared) -->
+  <!-- From Uiverse.io by dexter-st -->
+  <div class="loader-screen" id="loaderScreen">
+    <div class="loader-wrapper">
+      <div class="loader"></div>
+    </div>
+  </div>
+
+  <!-- Inert placeholder — NOT Night UI markup. js/main.js's loader
+       fade-in unconditionally does
+       document.getElementById("landing").classList.add(...) with no
+       null-check (unlike dock.js/day-background.js, which both bail out
+       safely if their target is missing). Night UI naturally has a real
+       #landing, so this was never an issue there; Day UI has nothing
+       that plays that role, so this hidden, empty div exists purely to
+       give that shared line something to call classList.add on. It has
+       no visual effect and no Night UI content — kept so js/main.js can
+       stay fully shared instead of forking a day-only copy of the
+       loader/cursor logic. -->
+  <div id="landing" hidden></div>
+
+  <!-- DAY DESKTOP — same markup as index.html's #desktopDay. Always
+       visible here: data-mode="day" is set statically on <html> above,
+       which is enough on its own to satisfy css/style.css's existing
+       [data-mode="day"] .desktop--day { display: block; } rule — no
+       extra CSS needed, and no clock-based day/night switching logic
+       either (index.html's inline detection script is Night UI's
+       concern; this file has no day/night boundary to compute at all).
+       No desktop icons and no aurora overlay: neither exists in the
+       current, restored index.html — icons were removed in Phase 2.5
+       ("to be rebuilt from scratch in a later phase") and the aurora
+       overlay was superseded by this same WebGL shader background, so
+       there's nothing to extract for either. -->
+  <div class="desktop desktop--day" id="desktopDay">
+
+    <!-- Full-viewport WebGL background effect (js/day-background.js) —
+         the day desktop's base visual layer. z-index 0, pointer-events
+         disabled, so it never blocks a click. The gradient declared on
+         .desktop--day in css/style.css stays as a fallback: if WebGL is
+         unavailable or the visitor has prefers-reduced-motion on, this
+         canvas hides itself and that gradient is what's seen instead. -->
+    <canvas id="webgl-canvas" class="day-shader-bg" aria-hidden="true"></canvas>
+
+    <!-- Widget cluster (weather/date/clock, top-right) removed at the
+         user's request, along with its dedicated CSS in style.css —
+         mirrors index.html so this preview stays accurate. -->
+
+  </div>
+
+  <!-- No Night UI in this preview (#landing content, .hotspot*,
+       #hoverLabel, #switchBtn, js's hotspot-hover-label wiring) —
+       intentionally excluded; this file is Day UI only. -->
+
+  <!-- Dock — identical markup to index.html's dock (shared component,
+       see css/style.css and js/dock.js). Real icons and magnification
+       are always active; the night-mode hidden/reveal CSS in
+       style.css never applies here since data-mode is statically
+       "day" above, so the dock stays visible exactly like it does on
+       the live site's day mode. -->
+  <div class="dock-hover-zone" id="dockHoverZone">
+  <div class="dock-wrapper" id="dockWrapper">
+    <div class="dock" id="dock">
+
+      <!-- PERSONAL -->
+      <div class="dock-slot" data-dock-slot data-tooltip="About Me">
+        <img src="assets/icons/aboutme.png" alt="About Me" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Resume">
+        <img src="assets/icons/resum.png" alt="Resume" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- PORTFOLIO -->
+      <div class="dock-slot" data-dock-slot data-tooltip="Gallery">
+        <img src="assets/icons/gallery.png" alt="Gallery" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Project Folder">
+        <img src="assets/icons/project folder.png" alt="Project Folder" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- CONTACT & SOCIAL -->
+      <a class="dock-slot" data-dock-slot data-tooltip="Gmail" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=ashhxx8@gmail.com" target="_blank" rel="noopener">
+        <img src="assets/icons/gmail.png" alt="Gmail" class="dock-icon-img" draggable="false">
+      </a>
+      <a class="dock-slot" data-dock-slot data-tooltip="GitHub" href="https://github.com/AnimeshHembram" target="_blank" rel="noopener">
+        <img src="assets/icons/github.png" alt="GitHub" class="dock-icon-img" draggable="false">
+      </a>
+      <a class="dock-slot" data-dock-slot data-tooltip="LinkedIn" href="https://www.linkedin.com/in/animeshhembram07/" target="_blank" rel="noopener">
+        <img src="assets/icons/linkedin.png" alt="LinkedIn" class="dock-icon-img" draggable="false">
+      </a>
+      <div class="dock-slot" data-dock-slot data-tooltip="YouTube">
+        <img src="assets/icons/youtube.png" alt="YouTube" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- OTHERS -->
+      <div class="dock-slot" data-dock-slot data-tooltip="Notes">
+        <img src="assets/icons/notes.png" alt="Notes" class="dock-icon-img" draggable="false">
+      </div>
+      <div class="dock-slot" data-dock-slot data-tooltip="Music">
+        <img src="assets/icons/player.png" alt="Music" class="dock-icon-img" draggable="false">
+      </div>
+
+      <div class="dock-divider" aria-hidden="true"></div>
+
+      <!-- UTILITY — Switch. This file is a static Day-only preview (no
+           clock logic to flip like index.html has), so "switching" here
+           means navigating to the Night preview instead of toggling a
+           data-mode attribute in place. Markup is the same Uiverse.io
+           "Liquid" gradient button used on index.html's dock, styled by
+           the shared .dock-slot--switch rules in css/style.css — nothing
+           there needed to change for this page. -->
+      <div class="dock-slot dock-slot--switch" data-dock-slot data-tooltip="Switch" id="dockSwitchBtn">
+        <div class="btn-wrapper">
+          <div class="light"></div>
+          <div class="gradient-layer" style="animation-delay: 0s; animation-duration: 25s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.15s; animation-duration: 15.9s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.53s; animation-duration: 26.4s;"></div>
+          <div class="gradient-layer" style="animation-delay: 0.45s; animation-duration: 17.8s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 19.2s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 29.2s;"></div>
+          <div class="gradient-layer" style="animation-delay: 1.6s; animation-duration: 20.2s;"></div>
+          <button type="button" class="gradient-btn" aria-label="Switch to the Night UI preview">Switch</button>
+          <div class="text-overlay" aria-hidden="true">Switch</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </div>
+
+  <!-- Shared scripts — same files as index.html/night.html. main.js
+       drives the loader fade-in and custom cursor (its hotspot-related
+       code finds zero .hotspot elements here and no-ops harmlessly);
+       dock.js drives dock magnification (its night-reveal state
+       machine keeps toggling a class, but that class has no visual
+       effect here since data-mode is never "night"); day-background.js
+       drives the WebGL shader on #webgl-canvas. Loading the real files
+       (not copies) is what keeps this preview from ever silently
+       drifting out of sync with the live site. -->
+  <script src="js/main.js" defer></script>
+  <script src="js/day-background.js" defer></script>
+  <script src="js/dock.js" defer></script>
+
+  <!-- Day-preview-only script — see js/day.js for why it's currently
+       near-empty. -->
+  <script src="js/day.js" defer></script>
+
+  <!-- Dock "Switch" button — this preview has no in-place day/night
+       state to flip, so the button navigates to the Night preview
+       instead. Kept as its own small inline script rather than folded
+       into js/day.js so it stays next to the markup it targets. -->
+  <script>
+    document.addEventListener("click", function (e) {
+      var slot = e.target.closest && e.target.closest("#dockSwitchBtn");
+      if (!slot) return;
+      window.location.href = "night.html";
+    });
+  </script>
+</body>
+</html>

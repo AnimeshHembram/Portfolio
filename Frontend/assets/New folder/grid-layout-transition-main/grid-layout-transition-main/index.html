@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grid Layout Transition | Codrops</title>
+  <meta name="description" content="" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="Codrops" />
+  <link
+        rel="icon"
+        type="image/svg+xml"
+        href="https://tympanus.net/favicon/favicon.svg" />
+  <link rel="shortcut icon" href="https://tympanus.net/favicon/favicon.ico" />
+  <link rel="stylesheet" type="text/css" href="css/base.css" />
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <script>
+    document.documentElement.className = 'js';
+  </script>
+</head>
+
+<body class="loading">
+  <main>
+    <header class="frame">
+      <h1 class="frame__title"><a href="https://tympanus.net/codrops/demos/?tag=grid">#Grid</a> Layout Transition with <a href="https://tympanus.net/codrops/demos/?tag=gsap">#GSAP</a></h1>
+      <a class="frame__back" href="https://tympanus.net/codrops/?p=">Article</a>
+      <a class="frame__archive" href="https://tympanus.net/codrops/hub/">All demos</a>
+      <a class="frame__github" href="https://github.com/codrops/">GitHub</a>
+      <nav class="frame__demos">
+        <span class="button selected">Default</span>
+        <a href="index2.html" class="button">Filter + Stagger</a>
+      </nav>
+      <nav class="options_grid_container">
+        <div class="configuration_grid_size">
+          <button data-size="50%">50%</button>
+          <button class="active" data-size="75%">75%</button>
+          <button data-size="100%">100%</button>
+          <button data-size="125%">125%</button>
+          <button data-size="150%">150%</button>
+        </div>
+      </nav>
+    </header>
+    <div class="content">
+      <section
+               class="grid_gallery_container"
+               id="grid-gallery"
+               data-size-grid="75%">
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/1.webp)"></div>
+          <p>01</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/2.webp)"></div>
+          <p>02</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 16 / 9">
+          <div
+               class="image"
+               style="background-image: url(public/3.webp)"></div>
+          <p>03</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 3 / 4">
+          <div
+               class="image"
+               style="background-image: url(public/4.webp)"></div>
+          <p>04</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 5 / 4">
+          <div
+               class="image"
+               style="background-image: url(public/5.webp)"></div>
+          <p>05</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/6.webp)"></div>
+          <p>06</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/7.webp)"></div>
+          <p>07</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/8.webp)"></div>
+          <p>08</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 3">
+          <div
+               class="image"
+               style="background-image: url(public/9.webp)"></div>
+          <p>09</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 5 / 7">
+          <div
+               class="image"
+               style="background-image: url(public/10.webp)"></div>
+          <p>10</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 3 / 2">
+          <div
+               class="image"
+               style="background-image: url(public/11.webp)"></div>
+          <p>11</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/12.webp)"></div>
+          <p>12</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 16 / 9">
+          <div
+               class="image"
+               style="background-image: url(public/13.webp)"></div>
+          <p>13</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 5 / 3">
+          <div
+               class="image"
+               style="background-image: url(public/14.webp)"></div>
+          <p>14</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/15.webp)"></div>
+          <p>15</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/16.webp)"></div>
+          <p>16</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 3 / 4">
+          <div
+               class="image"
+               style="background-image: url(public/17.webp)"></div>
+          <p>17</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/18.webp)"></div>
+          <p>18</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 5 / 7">
+          <div
+               class="image"
+               style="background-image: url(public/19.webp)"></div>
+          <p>19</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 3">
+          <div
+               class="image"
+               style="background-image: url(public/20.webp)"></div>
+          <p>20</p>
+        </div>
+
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/21.webp)"></div>
+          <p>21</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/22.webp)"></div>
+          <p>22</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/23.webp)"></div>
+          <p>23</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/24.webp)"></div>
+          <p>24</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 3">
+          <div
+               class="image"
+               style="background-image: url(public/25.webp)"></div>
+          <p>25</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 1 / 1">
+          <div
+               class="image"
+               style="background-image: url(public/26.webp)"></div>
+          <p>26</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/27.webp)"></div>
+          <p>27</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/28.webp)"></div>
+          <p>28</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 4 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/29.webp)"></div>
+          <p>29</p>
+        </div>
+        <div class="grid_gallery_item" style="--aspect-ratio: 6 / 5">
+          <div
+               class="image"
+               style="background-image: url(public/30.webp)"></div>
+          <p>30</p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="js/imagesloaded.pkgd.min.js"></script>
+  <script src="./js/gsap.js"></script>
+  <script src="./js/Flip.js"></script>
+  <script src="./js/script.js"></script>
+</body>
+
+</html>
