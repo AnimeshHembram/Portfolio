@@ -50,50 +50,91 @@
     <div class="mus-panels">
       <section class="mus-panel" id="panel-songs" role="tabpanel" aria-labelledby="tab-songs">
         <!--
-          Cassette Player (Songs) — Phase 1 UI/mechanics only.
+          Songs player — Phase 1 UI/mechanics only.
 
-          Vanilla port of the user-supplied CassettePlayer reference
-          (Codrops' "Old School Cassette Player with HTML5 Audio"). The
-          .mus-cassette__stage keeps the widget's own natural 672px-wide
-          layout intact (same coordinate system the original CSS assumes
-          for the tape, controls bar and volume knob) and js/music/main.js
-          scales that stage down as a whole to fit narrower panels/
-          viewports — no reflow, no distortion, no horizontal overflow.
+          Compact floating player, redesigned off the ChetanVerma
+          reference (https://ui.chetanverma.com/components/audio-player
+          — a React/Framer Motion/Tailwind component, reference only:
+          adapted into plain HTML/CSS/vanilla JS, nothing installed or
+          converted). Plain HTML5 <audio> driven by
+          js/music/songs-player.js (window.Music.createSongsPlayer),
+          same no-framework architecture as every other piece of this
+          page. The markup below is static chrome (art, title/artist, a
+          click/drag-to-seek progress bar, a five-button transport pill:
+          shuffle/prev/play-pause/next/repeat); the script fills in the
+          live values and wires up playback. No queue list — that
+          belonged to the earlier wide-card design, now removed.
 
-          #vc-container's tape markup is static here (matching the
-          original demo's own HTML); js/music/cassette-player.js injects
-          the <audio> element, the control buttons and the volume knob
-          into it at runtime, then drives all of it. See that file for
-          what was ported vs. deliberately dropped (jQuery, the legacy
-          transform.js/Modernizr shims).
+          songs-player.js takes a plain `songs` array of
+          { title, artist, albumArt, audio } objects (see main.js's init
+          call) — that shape is exactly what Backend/resources/music will
+          hand it once Phase 2/3 wire up a real library and selection
+          algorithm, so nothing here needs to change when that lands.
+          The four tracks wired up now are temporary placeholders (same
+          royalty-free demo songs the old CassettePlayer used, under
+          assets/New folder/CassettePlayer/songs/), and the album art is
+          a single placeholder SVG (assets/music/placeholder-cover.svg)
+          since no real artwork exists yet.
 
-          Songs/sounds are referenced directly from
-          assets/New folder/CassettePlayer/ rather than copied — see
-          cassette-player.js's init call in main.js for the four
-          placeholder tracks (temporary; real library lands in Phase 3).
+          #playerBg is the artwork-reactive ambient background, adapted
+          from the Groove Widget reference (Backend/resources/music/
+          Groove-Widget-main — reference only, not copied wholesale): an
+          oversized, blurred copy of the current track's own album art
+          plus two large soft color glows (matching the reference's own
+          full-page two-blob .app-bg, not one small centered glow), both
+          driven entirely by js/music/songs-player.js off the same
+          current-track state the player itself already uses (no
+          separate "current background track" exists). It's fixed/
+          full-viewport (see music.css for why — #panel-songs itself is
+          only as wide as the player's own 640px content column, so
+          anchoring to it trapped the effect in a visible rectangle) but
+          stays a child of #panel-songs so hiding this panel (My Sounds/
+          FM) hides it automatically, no main.js change needed. Two
+          alternating __layer divs let the artwork crossfade between
+          tracks instead of hard-cutting; .mus-player gets position:
+          relative + z-index so it stays visually in front of it. The
+          corner glows are kept at a low opacity even when no color was
+          derived from the artwork (see music.css/songs-player.js),
+          so the wash reads as continuous edge-to-edge instead of
+          fading to the page's own dark base away from the player.
         -->
-        <div class="mus-cassette">
-          <div class="mus-cassette__stage">
-            <div id="vc-container" class="vc-container">
-              <div class="vc-tape-wrapper">
-                <div class="vc-tape">
-                  <div class="vc-tape-back">
-                    <div class="vc-tape-wheel vc-tape-wheel-left"><div></div></div>
-                    <div class="vc-tape-wheel vc-tape-wheel-right"><div></div></div>
-                  </div>
-                  <div class="vc-tape-front vc-tape-side-a">
-                    <span>A</span>
-                  </div>
-                  <div class="vc-tape-front vc-tape-side-b">
-                    <span>B</span>
-                  </div>
-                </div>
-              </div>
-              <div class="vc-loader"></div>
+        <div class="mus-player-bg" id="playerBg" aria-hidden="true">
+          <div class="mus-player-bg__layer" id="playerBgLayerA"></div>
+          <div class="mus-player-bg__layer" id="playerBgLayerB"></div>
+          <div class="mus-player-bg__glow mus-player-bg__glow--a" id="playerBgGlowA"></div>
+          <div class="mus-player-bg__glow mus-player-bg__glow--b" id="playerBgGlowB"></div>
+        </div>
+        <div class="mus-player" id="songsPlayer">
+          <div class="mus-player__art">
+            <img class="mus-player__art-img" id="playerArtImg" src="" alt="" draggable="false" />
+          </div>
+          <div class="mus-player__meta">
+            <p class="mus-player__title" id="playerTitle">&nbsp;</p>
+            <p class="mus-player__artist" id="playerArtist">&nbsp;</p>
+          </div>
+
+          <div class="mus-player__progress">
+            <div class="mus-player__seek" id="playerSeek" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="mus-player__seek-fill" id="playerSeekFill"></div>
+            </div>
+            <div class="mus-player__times">
+              <span class="mus-player__time" id="playerTimeCurrent">0:00</span>
+              <span class="mus-player__time" id="playerTimeTotal">0:00</span>
             </div>
           </div>
+
+          <div class="mus-player__controls">
+            <div class="mus-player__controls-pill">
+              <button type="button" class="mus-player__btn mus-player__btn--shuffle" id="playerShuffle" aria-label="Shuffle" aria-pressed="false"></button>
+              <button type="button" class="mus-player__btn mus-player__btn--prev" id="playerPrev" aria-label="Previous track"></button>
+              <button type="button" class="mus-player__btn mus-player__btn--play" id="playerPlayPause" aria-label="Play"></button>
+              <button type="button" class="mus-player__btn mus-player__btn--next" id="playerNext" aria-label="Next track"></button>
+              <button type="button" class="mus-player__btn mus-player__btn--repeat" id="playerRepeat" aria-label="Repeat" aria-pressed="false"></button>
+            </div>
+          </div>
+
+          <audio id="playerAudio" preload="metadata"></audio>
         </div>
-        <p class="mus-cassette__note">Demo tracks only, temporarily standing in for the player mechanics. Your Indian &amp; English song library (Phase 2) and Backend resources (Phase 3) will replace these.</p>
       </section>
 
       <section class="mus-panel" id="panel-my-sounds" role="tabpanel" aria-labelledby="tab-my-sounds" hidden>
@@ -113,7 +154,7 @@
   </main>
 
   <script src="js/music/gooey-nav.js" defer></script>
-  <script src="js/music/cassette-player.js" defer></script>
+  <script src="js/music/songs-player.js" defer></script>
   <script src="js/music/main.js" defer></script>
 </body>
 </html>
