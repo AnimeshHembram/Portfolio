@@ -76,3 +76,10 @@ Portfolio/
 
 └── README.md
 
+## Roadmap
+
+- [ ] Improve portfolio interactions and animations
+- [ ] Add more detailed project case studies
+- [ ] Expand the experiments section
+- [ ] Improve performance and accessibility
+- [ ] Continue experimenting with AI-assisted development
