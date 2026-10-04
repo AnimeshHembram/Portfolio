@@ -87,3 +87,11 @@ Currently improving the portfolio's interactive experiences, music section, and 
 Actively developing and refining the portfolio.
 
 The project is being built incrementally, with new interactive experiences, creative experiments, and technical improvements added over time.
+
+## Development Principles
+
+- Keep the experience simple and interactive
+- Prefer lightweight vanilla web technologies where practical
+- Experiment with new interfaces and interactions
+- Document experiments and iterations
+- Keep the project accessible and maintainable
