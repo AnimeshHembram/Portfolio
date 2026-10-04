@@ -83,3 +83,7 @@ Portfolio/
 - [ ] Expand the experiments section
 - [ ] Improve performance and accessibility
 - [ ] Continue experimenting with AI-assisted development
+
+## Current Focus
+
+Currently improving the portfolio's interactive experiences, music section, and experimental projects while exploring creative applications of AI and web technologies.
