@@ -81,3 +81,9 @@ Portfolio/
 ## Current Focus
 
 Currently improving the portfolio's interactive experiences, music section, and experimental projects while exploring creative applications of AI and web technologies.
+
+## Project Status
+
+Actively developing and refining the portfolio.
+
+The project is being built incrementally, with new interactive experiences, creative experiments, and technical improvements added over time.
