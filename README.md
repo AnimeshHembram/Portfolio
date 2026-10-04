@@ -45,19 +45,13 @@ This repository contains the source code and assets for my personal portfolio we
 \## Tech Stack
 
 
-
-\- HTML
-
-\- CSS
-
-\- JavaScript
-
-\- Three.js
-
-\- Git
-
-\- GitHub
-
+- HTML5
+- CSS3
+- JavaScript
+- Three.js
+- Figma
+- Git
+- GitHub
 
 
 \## Project Structure
