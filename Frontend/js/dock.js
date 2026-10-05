@@ -347,7 +347,7 @@
 })();
 
 // ---------------------------------------------------------------------
-// "Music" dock icon — click + keyboard navigation to music.html
+// "Music" dock icon — click + keyboard navigation to m2.html
 // ---------------------------------------------------------------------
 // Same pattern as the "About Me" and "Gallery" blocks above, targeting
 // the Music slot instead. Music (PHASE 1) is a new, separate page —
@@ -356,7 +356,7 @@
 // the landing page (index.html's .hotspot-music), which toggles
 // background ambience and is untouched by this block.
 (function () {
-  var MUSIC_URL = "music.html";
+  var MUSIC_URL = "m2.html";
 
   var slots = Array.prototype.slice.call(
     document.querySelectorAll('.dock-slot[data-tooltip="Music"]')
