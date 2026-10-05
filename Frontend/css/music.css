@@ -236,366 +236,440 @@ body {
   display: none;
 }
 
-/* ---- Songs: Cassette Player ---------------------------------------------
-   Vanilla port of the user-supplied CassettePlayer reference (Codrops'
-   "Old School Cassette Player with HTML5 Audio" — jquery.cassette.js +
-   knobKnob.jquery.js). The vc- and knob rules below this comment are that
-   reference's own CSS (style.css + knobKnob.css), kept as given — this
-   is a port, not a redesign — with only two kinds of change: dropped
-   legacy vendor-prefixed/IE-only declarations that do nothing in a
-   current browser (prefixed transforms, prefixed @keyframes, prefixed
-   gradient syntax, the `filter: progid:...` IE gradient hack), and
-   image/font paths rewritten to point at the reference's own existing
-   location (assets/New folder/CassettePlayer/…) instead of being copied
-   here — see js/music/main.js and cassette-player.js for the same
-   decision on the audio assets. The player mechanics live in
-   js/music/cassette-player.js.
+/* Centers the Songs player in the actual remaining viewport area below
+   the fixed header — not just within whatever height its own content
+   happens to need, and not via a guessed margin-top. .mus-main's own
+   flex (align-items/justify-content) only positions .mus-panels, it
+   doesn't stretch it to fill the page, so without an explicit height
+   here "centering" would just center within the player's own box (a
+   no-op, which is why it looked pushed to the top before). The
+   min-height below is the exact same clamp() expressions as .mus-main's
+   own top/bottom padding (the header clearance and the bottom breathing
+   room) — not arbitrary numbers — so this panel's box always covers
+   precisely the space .mus-main actually leaves available, at any
+   viewport height. place-items: center then centers the player in both
+   directions within that box.
 
-   .mus-cassette / .mus-cassette__stage are new, and are NOT part of the
-   ported reference: the widget's own CSS below assumes its original
-   ~672px-wide canvas (that's what the control bar's centering and the
-   volume knob's left-offset math are measured against), so reflowing it
-   at narrow widths would distort the design. Instead .mus-cassette__stage
-   keeps that natural size and js/music/main.js scales it down as a whole
-   (via a plain CSS transform, never touching the widget's own layout
-   rules) to fit whatever width the Songs panel has. */
+   Scoped to #panel-songs specifically, not .mus-panel in general, so
+   My Sounds and FM keep their current top-aligned position exactly as
+   they already were — this only repositions Songs. The :not([hidden])
+   guard matters for a less obvious reason: #panel-songs is an ID
+   selector, which outranks .mus-panel[hidden]'s class+attribute
+   specificity — an unconditional `display: grid` here would win over
+   `display: none` while this panel is hidden (switched away from) and
+   leave it visibly showing through. Only applying display/sizing while
+   NOT hidden avoids that fight entirely.
 
-.mus-cassette {
-  width: 100%;
+   grid-template-columns: minmax(0, 1fr) keeps the single column's own
+   track exactly at the panel's real width (not stretched wider by
+   content) instead of leaving it as an implicit "auto" track, which is
+   the usual "grid blowout" fix. That alone wasn't sufficient here,
+   though: with place-items: center, the PLAYER ITSELF (the grid item)
+   is deliberately left unstretched — sized to fit its own content
+   rather than filling the track — and at narrow widths its content's
+   natural (non-wrapping) width, chiefly the queue's track-title/artist
+   lines, is wider than the panel. An unstretched grid item isn't
+   clamped to its track the way the track itself is clamped to the
+   panel, so the player rendered at ~473px inside a 350px-wide panel at
+   390px, overflowing it sideways — the same min-width:0/ellipsis rules
+   already on .mus-player's children only govern how THEY share
+   .mus-player's own box, not how wide that box is allowed to become.
+   justify-items: stretch fixes this at the root: the player fills the
+   track's actual width (identical to how it behaved before this
+   centering change, when it was a plain width:100% block-flow child),
+   so the same ellipsis rules now have a real, panel-width box to
+   truncate against. align-items stays center so the player is still
+   centered vertically within the available area; stretching it
+   horizontally is a no-op for centering since it already spans the
+   track's full width.
+
+   UPDATE (ChetanVerma-style redesign): .mus-player is no longer a
+   full-width card — it's a fixed, compact ~300px floating card (see
+   its own rules below), so stretching it to the track's width is no
+   longer correct (it would just leave empty space around a
+   width-capped box, not actually widen it). justify-items switched
+   back to center for that reason; the overflow risk described above
+   no longer applies either, since the queue (the thing that used to
+   overflow) is gone from the new design. */
+#panel-songs:not([hidden]) {
+  position: relative;
+  min-height: calc(100vh - clamp(5rem, 12vh, 7rem) - clamp(2rem, 6vh, 3rem));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+}
+
+/* ---- Songs: artwork-reactive background ----------------------------------
+   Adapted from the Groove Widget reference project (Backend/resources/
+   music/Groove-Widget-main — inspected, not copied: that's a full React
+   player, we only took the visual technique). Two parts, both reproduced:
+
+   1. An oversized, heavily blurred copy of the current track's own album
+      art (.mus-player-bg__layer): blur + boosted saturation + scale, the
+      same technique the reference's own AlbumArt component uses, just at
+      full-viewport scale instead of confined behind a thumbnail.
+   2. Two soft, large, blurred color "glows" (.mus-player-bg__glow--a/-b)
+      at different positions — matching the reference's own full-page
+      .app-bg (two separate colored blobs, not one centered glow) — tinted
+      by CSS custom properties (--mus-track-color / --mus-track-color-2)
+      that songs-player.js sets from sampling the actual artwork via
+      canvas when possible. Under file://, that sampling is blocked (see
+      songs-player.js for why); in that case these glows are kept at a
+      low, non-zero --mus-glow-opacity (set in songs-player.js) rather
+      than a strong flat fill, so the two corners they sit in don't read
+      as dark/empty next to the blurred-artwork layer's own brighter,
+      center-weighted glow — see songs-player.js's updateBackground()
+      for why this changed from fully off (it used to leave the far
+      corners looking cut off from the rest of the background).
+
+   This is position: fixed, not absolute — #panel-songs itself is only as
+   wide as .mus-panels' narrow 640px content column (same column the
+   player card lives in), so anchoring to that ancestor is what previously
+   trapped the whole effect inside a visible rectangle matching the
+   player's own area. Fixed positioning escapes that column and sizes to
+   the actual viewport, left/right/bottom genuinely edge-to-edge. The div
+   stays a DOM child of #panel-songs on purpose: when main.js hides this
+   panel (My Sounds/FM), `display: none` cascades to it automatically,
+   same as any other descendant — no change to main.js needed. z-index:
+   -1 keeps it behind ALL normal in-flow page content (including the
+   header, which has its own explicit z-index: 10 and is unaffected
+   either way) without depending on DOM nesting order. The header's own
+   opaque backdrop (.mus-topbar::before, load-bearing for the GooeyNav
+   blend effect — not something this touches) still paints over the band
+   directly behind it, so the atmosphere naturally starts just below the
+   header rather than literally under the nav pill.
+
+   Two alternating __layer divs (not one) exist so songs-player.js can
+   cross-fade the artwork on a track change instead of the reference's
+   own hard image cut (background-image can't be transitioned directly;
+   opacity can). .mus-player keeps position: relative + a higher
+   z-index so it stays visually in front of this background without
+   changing its own layout (relative with no offset doesn't move
+   anything).
+
+   z-index: 0, not a negative value — found by inspecting the actual
+   rendered page, not guessed: html AND body both set an explicit
+   background (html,body { background: var(--mus-ink) } above), so the
+   usual "body's background becomes the canvas, painted below
+   everything" special case does NOT apply here. With an explicit
+   html background present, body paints its own --mus-ink background as
+   an ordinary in-flow box — which sits ABOVE any negative-z-index
+   descendant in paint order, however deeply nested. A z-index: -1 fixed
+   layer here was measured with the exact right position, size, image,
+   and opacity, yet never visible, because body's own opaque background
+   was painting directly over it. z-index: 0 moves it into the
+   "positioned elements" paint group instead (ordered purely by z-index,
+   unaffected by body's own background box), which is still safely
+   behind .mus-player (z-index: 1) and the header (z-index: 10). */
+/* mix-blend-mode: screen is the actual fix for the reported black/gray
+   split — found by measuring pixels, not guessing. The placeholder
+   artwork's own fill (see assets/music/placeholder-cover.svg) is a
+   diagonal gradient from #3a3a3a down to #161616, and that second stop
+   (22,22,22) is darker than the page's own base ink color, --mus-ink
+   (28,28,28). Under ordinary alpha-blend compositing (what this used
+   before), blending a partially-transparent layer that's LOCALLY
+   DARKER than its backdrop makes that patch of the page render darker
+   than the plain page around it — measured directly in a render of
+   this exact CSS: pixel values as low as 19 against a base of 28. A
+   viewer sees that as "one area is almost black, another has a gray
+   glow" — two different-looking regions — instead of one soft wash,
+   which matches exactly what was reported. (A first attempt at a fix
+   added a second, independently-positioned pair of glows to lighten
+   the darker regions — that only traded one patchwork for another: now
+   measurably dark gaps appeared *between* the glows instead.)
+   mix-blend-mode: screen changes the mechanism, not just the numbers:
+   screen can only ever lighten a backdrop, never darken it (screening
+   a fully black pixel over anything reproduces that same backdrop
+   exactly, unchanged) — so no pixel in this layer's output can ever
+   read darker than the plain page would without it, regardless of how
+   dark the source artwork, any future real artwork, or any added glow
+   might be. That removes the "darker patch" failure mode at the root
+   instead of tuning opacity numbers against it. It's set on the
+   container (.mus-player-bg) rather than each layer so the two
+   crossfading artwork layers and the two glows are first composited
+   together normally, then that single combined result is screened onto
+   the page as one unit — not four separate, independently-blended
+   shapes that could still show seams against each other. */
+.mus-player-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
-  /* Flex-centering rather than the stage's own margin: 0 auto: auto
-     margins only center a box that's narrower than its container — once
-     the (scaled-down) 672px stage is wider than this panel, auto margins
-     clamp to 0 and the box sits flush left, overflowing only on the
-     right. That silently shifted the whole widget off-center and behind
-     this element's own overflow: hidden at narrow widths (390px and
-     below) — half the cassette was being clipped away, not just scaled
-     down. Flex justify-content: center keeps it symmetrically centered
-     (equal overflow both sides) at any width, which the scale transform
-     below then shrinks from correctly. */
-  display: flex;
-  justify-content: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  --mus-player-bg-opacity: 0.42;
+  --mus-player-bg-saturate: 1.6;
+  --mus-glow-opacity: 0;
 }
 
-.mus-cassette__stage {
-  width: 672px;
-  /* Prevent flexbox's own flex-shrink from resizing this before our
-     script gets to it — the JS-driven transform: scale(), not flexbox,
-     is what's responsible for fitting this to the panel. */
-  flex: none;
-  padding: 30px 0;
-  transform-origin: top center;
-}
-
-.mus-cassette__note {
-  margin: 1.5rem auto 0;
-  max-width: 32rem;
-  text-align: center;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-@font-face {
-  font-family: "playericons";
-  src: url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.eot?#iefix") format("embedded-opentype"), url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.woff") format("woff"),
-    url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.ttf") format("truetype"), url("../assets/New%20folder/CassettePlayer/css/fonts/playericons.svg#playericons") format("svg");
-  font-weight: normal;
-  font-style: normal;
-}
-
-/* ---- vc-* (tape + controls) — adapted from the reference's style.css --- */
-
-.vc-container {
-  text-align: center;
-  height: 500px;
-  position: relative;
-}
-
-.vc-tape-wrapper {
-  perspective: 800px;
-}
-
-.vc-tape {
-  width: 586px;
-  height: 379px;
-  margin: 30px auto 0;
-  position: relative;
-  transition: all 0.4s ease-in-out;
-}
-
-.vc-loader {
+/* inset/blur kept modest (not the full viewport doubly expanded by an
+   extra transform: scale on top of the inset) purely to keep the blur
+   cheap to render; translateZ(0) + will-change promote this to its own
+   stable compositor layer so repeated opacity crossfades don't force a
+   repaint of the blur itself. */
+.mus-player-bg__layer {
   position: absolute;
-  width: 31px;
-  height: 31px;
-  bottom: 50px;
-  left: 50%;
-  margin: -15px 0 0 -15px;
-  background: transparent url("../assets/New%20folder/CassettePlayer/images/ajax-loader.gif") no-repeat center center;
-  display: none;
+  inset: -8%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(64px) saturate(var(--mus-player-bg-saturate))
+    brightness(0.9);
+  transform: translateZ(0);
+  will-change: opacity;
+  opacity: 0;
+  transition: opacity 1.2s ease, filter 1.2s ease;
 }
 
-.vc-tape-back {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_back.png") no-repeat center center;
+.mus-player-bg__layer.is-visible {
+  opacity: var(--mus-player-bg-opacity);
 }
 
-.vc-tape-wheel {
-  width: 125px;
-  height: 125px;
+.mus-player-bg__layer.mus-player-bg__layer--no-transition {
+  transition: none;
+}
+
+.mus-player-bg__glow {
   position: absolute;
-  top: 110px;
-  background: transparent;
+  width: min(55vw, 55vh);
+  height: min(55vw, 55vh);
   border-radius: 50%;
+  filter: blur(90px);
+  transform: translateZ(0);
+  will-change: opacity, background;
+  opacity: var(--mus-glow-opacity);
+  transition: background 1.2s ease, opacity 1.2s ease;
 }
 
-.vc-tape-wheel-left {
-  left: 109px;
-  box-shadow: 0 0 0 70px #000;
+.mus-player-bg__glow--a {
+  top: -10%;
+  left: -10%;
+  background: var(--mus-track-color, #303030);
 }
 
-.vc-tape-wheel-right {
-  right: 113px;
+.mus-player-bg__glow--b {
+  bottom: -15%;
+  right: -10%;
+  background: var(--mus-track-color-2, #303030);
 }
 
-@keyframes rotateLeft {
-  0% {
-    transform: rotate(0deg) translateZ(-1px);
+#panel-songs .mus-player {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mus-player-bg__layer,
+  .mus-player-bg__glow {
+    transition: none;
   }
-  100% {
-    transform: rotate(-360deg) translateZ(-1px);
+}
+
+/* ---- Songs: player -------------------------------------------------------
+   Compact floating player. Originally built off the ChetanVerma dark
+   glass reference (https://ui.chetanverma.com/components/audio-player);
+   since restyled to match a second reference screenshot the user
+   supplied directly (a flat, solid medium-gray card — not dark/
+   translucent glass): opaque gray card with a soft drop shadow, the
+   album art inset with visible card-colored margin around it (not
+   edge-to-edge), a single centered title line (no separate artist
+   line), then a thin seek bar + time row, then a taller, fully-rounded
+   dark-gray pill holding five bigger round transport buttons. Structure
+   (markup, 5-button order, real <audio> wiring, click/drag seek) is
+   unchanged from the ChetanVerma pass — this is a surface restyle only.
+   The ambient background above (.mus-player-bg) is untouched and still
+   shows through on every side of this card. */
+
+.mus-player {
+  width: min(300px, 100%);
+  margin: 0 auto;
+  padding: 1.25rem;
+  border-radius: 1.5rem;
+  background: #717171;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Matches the reference's own entrance transition (opacity + blur,
+     ~0.3s, slight delay) — approximating its Framer Motion spring with
+     a plain CSS animation. */
+  animation: mus-player-in 0.3s ease 0.1s both;
+}
+
+@keyframes mus-player-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
   }
 }
 
-@keyframes rotateRight {
-  0% {
-    transform: rotate(0deg) translateZ(-1px);
-  }
-  100% {
-    transform: rotate(360deg) translateZ(-1px);
+@media (prefers-reduced-motion: reduce) {
+  .mus-player {
+    animation: none;
   }
 }
 
-.vc-tape-wheel div {
+.mus-player__art {
+  flex: none;
+  width: 100%;
+  /* Reference crops to a landscape frame (~1.35:1), not a square —
+     aspect-ratio keeps that proportion at any card width instead of a
+     fixed px height. */
+  aspect-ratio: 1.35 / 1;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.mus-player__art-img {
+  display: block;
   width: 100%;
   height: 100%;
-  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_wheel.png") no-repeat center center;
+  object-fit: cover;
 }
 
-.vc-tape-front {
-  width: 100%;
-  height: 100%;
+.mus-player__meta {
+  min-width: 0;
+  margin-top: 0.9rem;
+  text-align: center;
+}
+
+.mus-player__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--mus-paper);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The reference shows one line of text under the art, not a separate
+   title + artist pair — kept in the DOM (songs-player.js still sets it)
+   for screen readers, but visually hidden rather than deleted, so nothing
+   downstream has to special-case a missing element. */
+.mus-player__artist {
   position: absolute;
-  background: transparent url("../assets/New%20folder/CassettePlayer/images/cs_front.png") no-repeat center center;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mus-player__progress {
+  margin-top: 0.85rem;
+}
+
+/* Plain div seek bar (not a native <input type="range">), matching the
+   reference's own CustomSlider: a thin track, a width-animated fill,
+   no visible thumb, click/drag-to-seek handled in songs-player.js. A
+   keydown handler there adds Left/Right-arrow nudging so keyboard users
+   aren't left worse off than the native control this replaces. */
+.mus-player__seek {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.mus-player__seek-fill {
+  position: absolute;
   top: 0;
   left: 0;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--mus-paper);
+  transition: width 0.1s linear;
 }
 
-.vc-tape-side-b {
-  display: none;
-  transform: rotate3d(0, 1, 0, 180deg);
+.mus-player__times {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.4rem;
 }
 
-.vc-tape-front span {
-  color: rgba(0, 0, 0, 0.6);
-  position: absolute;
-  top: 83px;
-  left: 67px;
-  font-family: Arial;
-  font-weight: bold;
-  font-size: 20px;
+.mus-player__time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--mus-paper);
 }
 
-ul.vc-controls {
-  list-style: none;
-  padding: 8px;
-  width: 440px;
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  margin: 0 0 0 -170px;
-  background: linear-gradient(to bottom, rgba(170, 170, 170, 0.35) 0%, rgba(255, 255, 255, 0.44) 50%, rgba(255, 255, 255, 0.53) 100%);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-bottom-color: rgba(255, 255, 255, 0.6);
-  height: 54px;
-  box-shadow: inset 0 1px 0px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 0 rgba(255, 255, 255, 0.4), inset 0 2px 19px rgba(0, 0, 0, 0.05), 0 2px 1px rgba(0, 0, 0, 0.06);
-  box-sizing: content-box;
-  border-radius: 12px;
+.mus-player__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.85rem;
 }
 
-ul.vc-controls li {
-  display: block;
-  float: left;
-  width: 80px;
-  height: 50px;
-  line-height: 55px;
-  text-align: left;
-  padding: 10px;
-  margin: 0;
+.mus-player__controls-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: fit-content;
+  background: #383838;
+  border-radius: 999px;
+  padding: 0.625rem;
+}
+
+/* Five uniform, circular, ghost-style buttons — the reference does NOT
+   enlarge or recolor Play/Pause relative to the other four, so neither
+   does this. Sized larger (2.5rem) than the original ChetanVerma pass
+   to match the second reference's chunkier control row. */
+.mus-player__btn {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  background: transparent;
+  color: var(--mus-paper);
+  border-radius: 50%;
   cursor: pointer;
-  background: #ddd url("../assets/New%20folder/CassettePlayer/images/metal.jpg") no-repeat center top;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -6px 5px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 4px 1px rgba(0, 0, 0, 0.5);
-  -webkit-touch-callout: none;
-  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-ul.vc-controls li:first-child {
-  border-radius: 8px 0 0 8px;
+.mus-player__btn svg {
+  width: 22px;
+  height: 22px;
 }
 
-ul.vc-controls li:last-child {
-  border-radius: 0px 8px 8px 0px;
+.mus-player__btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.1);
 }
 
-ul.vc-controls li.vc-control-play {
-  width: 120px;
+.mus-player__btn:active {
+  transform: scale(0.9);
 }
 
-ul.vc-controls li span:before {
-  font-size: 16px;
-  line-height: 50px;
-  text-align: center;
-  float: left;
-  color: #444;
-  font-family: "playericons";
-  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
-  font-style: normal;
-  font-weight: normal;
-  text-transform: none;
-  speak: none;
-  display: inline-block;
-  text-decoration: inherit;
-  width: 1em;
-  margin-right: 0.2em;
+/* Persistent highlight while shuffle/repeat is toggled on. */
+.mus-player__btn.is-active {
+  background: rgba(255, 255, 255, 0.14);
 }
 
-li.vc-control-pause span:before {
-  content: "\50";
-}
-li.vc-control-fforward span:before {
-  content: "\23e9";
-}
-li.vc-control-rewind span:before {
-  content: "\23ea";
-}
-li.vc-control-stop span:before {
-  content: "\25aa";
-}
-li.vc-control-play span:before {
-  content: "\70";
-}
-li.vc-control-volume-off span:before {
-  content: "\1f507";
-}
-li.vc-control-volume-down span:before {
-  content: "\1f509";
-}
-li.vc-control-volume-up span:before {
-  content: "\1f50a";
-}
-
-ul.vc-controls li:hover {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -10px 15px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 4px 1px rgba(0, 0, 0, 0.5);
-}
-
-ul.vc-controls li.vc-control-active {
-  height: 50px;
-  margin-top: 2px;
-  background-image: url("../assets/New%20folder/CassettePlayer/images/metal_dark.jpg");
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), inset 0 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -6px 5px rgba(0, 0, 0, 0.1), 0 6px 7px rgba(0, 0, 0, 0.3), 0 2px 1px rgba(0, 0, 0, 0.5);
-}
-
-ul.vc-controls li.vc-control-pressed,
-ul.vc-controls li.vc-control-active.vc-control-pressed {
-  height: 50px;
-  background-image: url("../assets/New%20folder/CassettePlayer/images/metal_dark.jpg");
-  margin-top: 4px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 0 5px 1px rgba(255, 255, 255, 0.5), inset 0 -10px 15px rgba(0, 0, 0, 0.2), 0 7px 5px rgba(255, 255, 255, 0.5);
-}
-
-.vc-volume-wrap {
-  width: 100px;
-  height: 100px;
-  position: absolute;
-  bottom: 0px;
-  left: 50%;
-  margin-left: -318px;
-  background: linear-gradient(to bottom, rgba(170, 170, 170, 0.35) 0%, rgba(255, 255, 255, 0.44) 50%, rgba(255, 255, 255, 0.53) 100%);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  padding: 8px;
-  box-shadow: inset 0 1px 0px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.6), 0 -1px 0 rgba(255, 255, 255, 0.4), inset 0 2px 19px rgba(0, 0, 0, 0.05), 0 2px 1px rgba(0, 0, 0, 0.06);
-  box-sizing: content-box;
-}
-
-.vc-volume-wrap:after {
-  content: "Volume";
-  margin-top: 15px;
-  display: block;
-}
-
-ul.vc-controls li,
-.vc-volume-wrap:after {
-  font-family: var(--mus-font);
-  font-size: 10px;
-  font-weight: 300;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #666;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-}
-
-/* ---- knob (volume dial) — adapted from the reference's knobKnob.css --- */
-
-.knob {
-  width: 100px;
-  height: 100px;
-  position: relative;
-}
-
-.knob .top {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: url("../assets/New%20folder/CassettePlayer/images/knob.jpg") no-repeat center center;
-  z-index: 10;
-  cursor: default !important;
-  border-radius: 50%;
-  box-shadow: inset 0 0 3px 2px rgba(255, 255, 255, 0.6);
-}
-
-.knob .base {
-  width: 100%;
-  height: 100%;
-  box-shadow: 0 5px 0 #555, 0px 5px 5px black;
-  position: absolute;
-  z-index: 1;
-  border-radius: 50%;
-}
-
-.knob .top:after {
-  content: "";
-  width: 4px;
-  height: 4px;
-  background-color: #666;
-  position: absolute;
-  top: 50%;
-  margin-top: -2px;
-  left: 4px;
-  border-radius: 50%;
-  cursor: default !important;
-  box-shadow: 0 0 1px #5a5a5a inset, 1px -1px 1px rgba(255, 255, 255, 0.5);
-}
-
-.knob [draggable] {
-  user-select: none;
+@media (prefers-reduced-motion: reduce) {
+  .mus-player__btn {
+    transition: background-color 0.2s ease;
+  }
 }
 
 @media (max-width: 640px) {
-  .mus-cassette__note {
-    font-size: 0.75rem;
+  .mus-player {
+    width: min(280px, 100%);
   }
 }
 
