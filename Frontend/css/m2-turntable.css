@@ -1,0 +1,514 @@
+/*
+  M2 turntable — component styles (loaded inside the shadow root).
+
+  2026-10-04 (reference match): every position and size below was
+  measured from the user's reference image (deck 1154 x 897 px, so
+  1cqw = 11.54 reference px) and the record shows the reference's own
+  artwork (assets/music/m2/record-artwork.png), unfiltered.
+
+  The reference's platter is ~3% flatter than a circle; M2 reproduces
+  that with a scaleY on .platter, and the record turns inside it. The
+  one deliberate departure: the spindle is drawn at the record's true
+  centre (the image has it 5px off-centre), so it does not wobble.
+
+  Not shown, as in the reference: artist/track strip, status line,
+  pressing stamp, logo, bottom deck screw. They stay in the DOM so the
+  script and screen readers are unaffected.
+*/
+:host {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.2865 / 1;
+  container-type: inline-size;
+  color: #e7e7e9;
+  font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.deck {
+  --rpm: 33.333;
+  --spin-duration: 1.8s;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 7cqw;
+  background:
+    radial-gradient(115% 82% at 6% -8%, rgba(255,255,255,.115) 0%, rgba(255,255,255,.075) 30%, rgba(255,255,255,.03) 55%, rgba(255,255,255,0) 78%),
+    linear-gradient(180deg, #1b1b1b 0%, #181818 45%, #151515 100%);
+  box-shadow:
+    0 28px 42px rgba(20,21,23,.21),
+    0 8px 13px rgba(16,17,19,.12),
+    inset 0 1px 1px rgba(255,255,255,.26),
+    inset 0 -2px 1px rgba(0,0,0,.8),
+    inset 1px 0 1px rgba(255,255,255,.04);
+}
+
+.deck::before {
+  content: '';
+  position: absolute;
+  z-index: 15;
+  inset: 0;
+  border: 1px solid rgba(255,255,255,.035);
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.44);
+}
+
+.deck-glaze {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .032;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.1 -.25'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+}
+
+.brand-mark {
+  position: absolute;
+  z-index: 6;
+  top: 6.7%;
+  left: 4.65%;
+  display: none;
+  align-items: center;
+  gap: .55cqw;
+  color: rgba(242,243,244,.95);
+  font-size: clamp(8px, 1.55cqw, 11px);
+  font-weight: 600;
+  letter-spacing: -.055em;
+  text-shadow: 0 1px 2px rgba(0,0,0,.8);
+}
+
+.brand-symbol { width: 4.2cqw; height: 4.2cqw; min-width: 16px; min-height: 16px; filter: drop-shadow(0 1px 1px #000); }
+
+.platter {
+  position: absolute;
+  z-index: 3;
+  top: 3.873cqw;
+  left: 4.966%;
+  width: 72.66%;
+  aspect-ratio: 1;
+  /* The reference's platter is ~3% flatter than a circle; the record spins inside this. */
+  transform: scaleY(.9714);
+  border-radius: 50%;
+  background: linear-gradient(162deg, #303132 0%, #38393a 24%, #1b1c1d 52%, #050505 78%);
+  box-shadow:
+    0 0 0 .42cqw #060707,
+    0 0 0 .87cqw #030404,
+    0 0 .45cqw .95cqw rgba(0,0,0,.5),
+    inset 0 1px 1px rgba(255,255,255,.16),
+    inset 0 -2px 4px rgba(0,0,0,.95);
+}
+
+.platter-lip {
+  position: absolute;
+  z-index: 1;
+  inset: 1.32%;
+  border: max(1px, .11cqw) solid rgba(227,230,231,.3);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.9), 0 0 0 max(1px, .2cqw) rgba(0,0,0,.55);
+}
+
+.record-bed {
+  position: absolute;
+  z-index: 1;
+  inset: 2.63%;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #0a0d0e;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.92), inset 0 -1px 1px rgba(255,255,255,.1);
+}
+
+.record {
+  position: absolute;
+  /* In the reference the record sits a few pixels right of and below the platter's centre. */
+  inset: 2.068% .953% 1.215% 2.33%;
+  overflow: hidden;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 8%, rgba(8,11,12,.75) 8.2% 8.7%, transparent 9%),
+    var(--album-color, #203537);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), inset 0 0 24px rgba(0,0,0,.5);
+  transform: rotate(0deg);
+  transform-origin: center;
+}
+
+.is-playing .record { animation: vinyl-turn var(--spin-duration) linear infinite; }
+
+.cover-art, .cover-shade, .record-grooves, .record-sheen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.cover-art {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* The reference artwork already carries its own shading, grooves and sheen,
+   so these three overlays are off; they would tint and double them. */
+.cover-shade, .record-grooves, .record-sheen { display: none; }
+.cover-shade {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 48% 38%, transparent 40%, rgba(6,11,12,.08) 78%, rgba(5,7,8,.4) 100%),
+    linear-gradient(147deg, var(--album-tint, rgba(25,45,48,.18)), transparent 54%, rgba(0,0,0,.32));
+  pointer-events: none;
+}
+
+.record-grooves {
+  z-index: 2;
+  background: repeating-radial-gradient(circle at 50% 50%, rgba(231,240,239,.065) 0 1px, rgba(2,4,5,.12) 1px 2px, transparent 2px 4px);
+  opacity: .5;
+  mix-blend-mode: overlay;
+  box-shadow: inset 0 0 0 .1cqw rgba(255,255,255,.16), inset 0 0 0 .32cqw rgba(4,8,9,.5), inset 0 0 0 .52cqw rgba(255,255,255,.06);
+  pointer-events: none;
+}
+
+.record-sheen {
+  z-index: 3;
+  background:
+    radial-gradient(ellipse at 27% 18%, rgba(226,247,244,.17), transparent 42%),
+    linear-gradient(127deg, rgba(255,255,255,.12), transparent 24% 61%, rgba(241,255,252,.1) 71%, transparent 78%);
+  opacity: .46;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.pressing-stamp {
+  display: none;
+  position: absolute;
+  z-index: 4;
+  top: 8.5%;
+  left: 40%;
+  color: rgba(245,246,240,.87);
+  font-size: clamp(6px, .95cqw, 8px);
+  font-weight: 500;
+  letter-spacing: .18em;
+  transform: rotate(-10deg);
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+  pointer-events: none;
+}
+
+.spindle {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  left: 50%;
+  width: 2.95%;
+  aspect-ratio: 1;
+  transform: translate(-50%,-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #fff 0, #f4f4f4 34%, #d2d2d2 62%, #9d9d9d 86%, #7a7a7a 100%);
+  box-shadow: 0 0 0 .17cqw #050505, 0 .12cqw .25cqw .12cqw rgba(0,0,0,.5);
+}
+
+.spindle i {
+  position: absolute;
+  top: 40%; left: 42%;
+  width: 19%; height: 19%;
+  border-radius: 50%;
+  background: #1b1b1b;
+  box-shadow: 0 0 0 max(1px, .1cqw) rgba(60,60,60,.45);
+}
+
+.progress-track, .progress-light {
+  position: absolute;
+  z-index: 5;
+  inset: .3%;
+  border-radius: 50%;
+  pointer-events: none;
+  --ring: max(2px, .35cqw);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring) - 1px), #000 calc(100% - var(--ring)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring) - 1px), #000 calc(100% - var(--ring)));
+}
+
+.progress-track { background: conic-gradient(from -90deg, rgba(231,236,237,.34) 0%, rgba(231,236,237,.22) 45%, rgba(231,236,237,.1) 62%, rgba(231,236,237,.08) 85%, rgba(231,236,237,.34) 100%); }
+.progress-light { background: conic-gradient(from -90deg, #fff 0 var(--progress, 0%), rgba(255,255,255,0) var(--progress, 0%) 100%); filter: drop-shadow(0 0 .25cqw rgba(255,255,255,.55)); }
+
+.seek-hit {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+  outline: none;
+}
+.seek-hit:focus-visible { box-shadow: inset 0 0 0 2px rgba(255,255,255,.84); }
+
+.power-toggle {
+  position: absolute;
+  z-index: 9;
+  top: 6.5cqw;
+  left: 63.14%;
+  width: 7.35%;
+  height: 4.853cqw;
+  min-width: 30px;
+  min-height: 20px;
+  padding: 0;
+  border: 1px solid #000;
+  border-radius: 99px;
+  color: #27292a;
+  background: linear-gradient(180deg, #0c0c0c, #080808 55%, #0d0d0d);
+  box-shadow: 0 0 0 max(1px, .1cqw) rgba(255,255,255,.15), 0 .1cqw .3cqw rgba(0,0,0,.6), inset 0 1px 2px rgba(0,0,0,.9);
+  cursor: pointer;
+}
+.power-toggle:focus-visible, .speed-dial:focus-visible, .play-button:focus-visible, .skip-button:focus-visible { outline: 2px solid #e9eeee; outline-offset: 3px; }
+.switch-housing { position: absolute; inset: 14% 17.5% 19%; border-radius: 99px; background: linear-gradient(180deg,#161616,#262626); box-shadow: inset 0 1px 2px #000, 0 1px 0 rgba(255,255,255,.06); }
+.switch-knob { position: absolute; top: 11%; left: 12%; width: 35%; height: 78%; border-radius: 50%; background: radial-gradient(ellipse at 40% 30%,#ececec,#c4c4c4 40%,#8a8a8a 76%,#5c5c5c); box-shadow: 0 1px 2px #000; transition: left .22s ease; }
+.power-toggle[aria-pressed="true"] .switch-knob { left: 53%; }
+.switch-mark { position: absolute; top: 49%; right: 13%; width: 9%; aspect-ratio: 1.4; transform: translateY(-50%); border-radius: 50%; background: #7a7a7a; opacity: .9; }
+.power-toggle[aria-pressed="true"] .switch-mark { right: auto; left: 13%; }
+
+.speed-dial {
+  position: absolute;
+  z-index: 8;
+  top: 3.55cqw;
+  left: 69.54%;
+  width: 9.36%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,.8);
+  border-radius: 50%;
+  background: linear-gradient(140deg, #3a3a3a 0%, #2a2a2a 30%, #080808 62%, #040404 100%);
+  box-shadow: 0 0 0 max(1px, .09cqw) rgba(255,255,255,.06), 0 .15cqw .35cqw #050505;
+  cursor: pointer;
+}
+.speed-dial::before { content:''; position:absolute; inset:10.6%; border-radius:50%; background:linear-gradient(150deg,#6a6a6a,#454545 38%,#2b2b2b 72%,#3a3a3a); box-shadow: 0 max(-1px,-.1cqw) 0 rgba(255,255,255,.55), inset 0 max(1px,.09cqw) 0 rgba(255,255,255,.2), inset 0 -.15cqw .3cqw rgba(0,0,0,.5); }
+.dial-face { position:absolute; inset:17.6%; display:grid; place-items:center; border-radius:50%; background:radial-gradient(circle at 34% 28%,#a0a0a0,#8b8b8b 38%,#6c6c6c 70%,#484848 100%); box-shadow:inset .06cqw max(1px,.12cqw) 0 rgba(255,255,255,.5), inset 0 -.1cqw .25cqw rgba(0,0,0,.4); }
+/* Both speeds are always printed under the dial, as in the reference; the dial's marker moves round to show 45 is selected. */
+.speed-dial[aria-pressed="true"] .dial-pin { transform:translateY(-275%) rotate(-64deg) translateY(275%) rotate(45deg); }
+.dial-light { width:24%; aspect-ratio:1; border-radius:50%; background:#fff; box-shadow:0 0 .18cqw rgba(255,255,255,.55); transition:box-shadow .25s; }
+.is-playing .dial-light { box-shadow:0 0 .8cqw .25cqw rgba(255,255,255,.6); }
+.dial-pin { position:absolute; bottom:17.5%; width:10%; aspect-ratio:1; transform:rotate(45deg); border-radius:1px; background:#4a4a4a; transition:transform .3s ease; }
+.speed-readout { position:absolute; z-index:8; top:11.98cqw; left:69.47%; width:9.36%; color:#fff; font-size:clamp(6px,.94cqw,13px); font-weight:700; line-height:1.28; text-align:center; letter-spacing:.03em; pointer-events:none; }
+.speed-option { display:block; color:#fff; }
+.speed-option.is-active { color:#fff; }
+
+.tonearm {
+  position: absolute;
+  z-index: 10;
+  top: 12.11cqw;
+  right: 1.19%;
+  width: 19.5%;
+  height: 66.722cqw;
+  /* The arm turns about the centre of its base, so the base stays put while the arm sweeps. */
+  transform-origin: 50% 8.053%;
+  /* The script's angle (31.2deg to 45.9deg across a track) is scaled a touch so the arm
+     sits exactly where the reference shows it at 1:28 of 3:04; the script is untouched. */
+  transform: rotate(calc(var(--arm-angle, 0deg) * .978));
+  transition: transform 1s cubic-bezier(.22,.65,.23,1);
+  pointer-events: none;
+}
+/* Resting position, as in the reference: the arm rests on the record. Before the first play it sits
+   at the start of the record (the same angle the script uses for 0:00) instead of parked over
+   the time display. Remove this rule to bring back the parked arm that swings on at first play. */
+.tonearm:not([data-engaged="true"]) {
+  transform: rotate(calc(31.2deg * .978));
+  transition: none;
+}
+.tonearm-well {
+  position: absolute;
+  top: -3.66%; left: 50%;
+  width: 80.4%; aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(133deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.05) 36%, rgba(0,0,0,.16) 66%, rgba(0,0,0,.36) 100%), radial-gradient(circle closest-side at 50% 50%, #404040 0, #404040 83.5%, #0f0f0f 85.5%, #2a2a2a 88.5%, #3c3c3c 93%, #303030 97%, #1e1e1e 100%);
+  box-shadow:0 1px 1px rgba(255,255,255,.14), 0 0 0 1px rgba(255,255,255,.03), 0 .3cqw .6cqw rgba(0,0,0,.45);
+}
+.well-ring { position:absolute; inset:7.4%; border:max(1px,.11cqw) solid; border-color:rgba(255,255,255,.3) rgba(255,255,255,.07) rgba(0,0,0,.45) rgba(255,255,255,.34); border-radius:50%; }
+.well-dimple { position:absolute; width:19%; aspect-ratio:1; right:9%; top:44%; border-radius:50%; background:radial-gradient(circle at 36% 30%,#b8b8b8,#989898 40%,#737373 76%,#525252); box-shadow:0 .1cqw .3cqw rgba(0,0,0,.85); }
+.tonearm-pivot {
+  position:absolute; z-index:2; top:.3%; left:50%;
+  width:41.8%; aspect-ratio:1;
+  transform:translateX(-50%);
+  border:1px solid rgba(0,0,0,.85);
+  border-radius:50%;
+  background:linear-gradient(133deg, rgba(255,255,255,.26), rgba(255,255,255,.04) 45%, rgba(0,0,0,.3)), #515151;
+  border-color:rgba(255,255,255,.42) rgba(255,255,255,.08) rgba(0,0,0,.7) rgba(255,255,255,.5);
+  box-shadow:0 .15cqw .4cqw rgba(0,0,0,.65);
+}
+.tonearm-pivot::before { content:''; position:absolute; inset:17%; border-radius:50%; border:1px solid rgba(20,21,22,.9); box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+.tonearm-pivot::after { content:''; position:absolute; top:7%; left:47%; width:6%; height:18%; background:linear-gradient(90deg,#232526,#999d9d,#36393a); border-radius:3px; }
+.pivot-screw { position:absolute; inset:43%; border-radius:50%; background:#292c2d; box-shadow:0 0 0 1px rgba(255,255,255,.13); }
+.counterweight {
+  position:absolute; z-index:3; top:-3.25%; left:50%; width:18.6%; height:15.6%;
+  border-radius:.22cqw .22cqw .5cqw .5cqw !important;
+  transform:translateX(-50%);
+  border-radius:.5cqw .5cqw .7cqw .7cqw;
+  background:linear-gradient(180deg, rgba(255,255,255,.6) 0, rgba(255,255,255,.6) 1.4%, rgba(255,255,255,0) 3%), linear-gradient(90deg,#050505 0,#2f2f2f 16%,#070707 36%,#030303 44%,#2a2a2a 66%,#0a0a0a 86%,#020202 100%);
+  box-shadow:0 .15cqw .35cqw rgba(0,0,0,.85);
+}
+.counterweight::before { content:''; position:absolute; left:24.5%; right:24.5%; bottom:-19%; height:20%; border-radius:0 0 2px 2px; background:linear-gradient(90deg,#5f5f5f,#f3f3f3 42%,#bdbdbd 62%,#676767); box-shadow:0 1px 2px rgba(0,0,0,.6); }
+.counterweight span { position:absolute; top:41.1%; left:50%; width:35.5%; aspect-ratio:1; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle at 38% 32%,#bdbdbd,#8a8a8a 45%,#5a5a5a 85%); box-shadow:0 1px 2px rgba(0,0,0,.7); }
+.arm-tube {
+  position:absolute; top:12%; left:50%; bottom:16.9%; width:6.2%;
+  transform:translateX(-50%);
+  border-radius:6px;
+  background:linear-gradient(90deg,#050505 0,#1c1c1c 14%,#f2f2f2 36%,#6c6c6c 47%,#0b0b0b 60%,#050505 82%,#7a7a7a 93%,#141414 100%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.85), inset 0 0 1px rgba(255,255,255,.3), 1px 0 2px rgba(255,255,255,.06);
+}
+.arm-tube::before { content:none; }
+.arm-tube i { position:absolute; bottom:11.1%; left:-18%; width:136%; height:2.1%; border-radius:2px; background:linear-gradient(90deg,#6a6a6a,#f4f4f4 45%,#c4c4c4 65%,#707070); box-shadow:0 1px 1px rgba(0,0,0,.6); }
+.arm-collar { position:absolute; top:68.85%; left:50%; width:8.4%; height:1.5%; transform:translateX(-50%); border-radius:2px; background:linear-gradient(90deg,#6a6a6a,#f4f4f4 45%,#c4c4c4 65%,#707070); box-shadow:0 0 0 1px rgba(0,0,0,.5), 0 1px 1px rgba(0,0,0,.6); }
+.headshell {
+  position:absolute; z-index:4; bottom:5.58%; left:50%;
+  width:34.2%; height:12.64%;
+  transform:translateX(-50%) rotate(17deg);
+  clip-path:polygon(12.5% 0, 87.5% 0, 90.5% 4%, 100% 93%, 96.5% 100%, 3.5% 100%, 0 93%, 9.5% 4%);
+  border-radius:2px 2px 7px 7px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22) 0, rgba(255,255,255,0) 14%, rgba(0,0,0,.1) 50%, rgba(0,0,0,0) 76%, rgba(0,0,0,.14) 77.5%, rgba(255,255,255,.1) 100%),
+    linear-gradient(90deg,#8f8f8f 0,#d4d4d4 9%,#cdcdcd 19%,#919191 35%,#7b7b7b 54%,#858585 67%,#c6c6c6 83%,#dedede 92%,#8c8c8c 100%);
+  box-shadow:0 2px 3px rgba(0,0,0,.7);
+}
+.headshell::before { content:''; position:absolute; left:18%; bottom:22.5%; width:2%; height:20%; background:rgba(255,255,255,.5); }
+/* The two headshell nuts: same size and finish, side by side on one line across the headshell,
+   mirrored about its centre line. The three gaps (edge to nut, nut to nut, nut to edge) are equal,
+   and the pair sits midway between the headshell's top edge and its seam. The border width is part
+   of each formula so this holds at every deck size. (The reference image has them off-centre;
+   positioned this way at the user's request, 2026-10-05.) */
+.head-screw { position:absolute; z-index:1; top:calc(30.2% - max(1px,.14cqw)); width:20.8%; aspect-ratio:1; border:max(1px,.14cqw) solid rgba(40,40,40,.85); border-radius:50%; background:radial-gradient(circle at 38% 32%,#fff 0,#e6e6e6 30%,#a8a8a8 68%,#6f6f6f 100%); box-shadow:0 1px 1px rgba(0,0,0,.35); }
+.screw-one { left:calc(21.41% - 1.3333 * max(1px,.14cqw)); } .screw-two { right:calc(21.41% - 1.3333 * max(1px,.14cqw)); }
+.stylus { position:absolute; z-index:2; bottom:1%; left:50%; width:12%; height:14%; transform:translateX(-50%); opacity:0; background:linear-gradient(90deg,#e2e2e2,#7c7c7c); clip-path:polygon(26% 0,74% 0,100% 100%,0 100%); }
+
+.volume-panel {
+  position:absolute;
+  z-index:11;
+  top:3.43cqw; left:3.43%;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:.95cqw;
+  width:20.52%; height:5.494cqw;
+  padding:0 2.25cqw 0 1.82cqw;
+  border:1px solid rgba(0,0,0,.85);
+  border-radius:99px;
+  background:linear-gradient(180deg,#040404,#101010 50%,#1a1a1a);
+  box-shadow:0 max(1px,.13cqw) 0 rgba(255,255,255,.24), 0 0 0 max(1px,.11cqw) rgba(255,255,255,.1), inset 0 .2cqw .45cqw rgba(0,0,0,.95);
+}
+.volume-label { color:#fff; font-size:clamp(6px,1.12cqw,15px); font-weight:600; letter-spacing:.01em; line-height:1; padding-top:.2cqw; }
+.volume-slider { --vol-track:max(2px,.38cqw); --vol-thumb-w:max(6px,1.87cqw); --vol-thumb-h:max(13px,4.33cqw); flex:1 1 0; min-width:0; width:100%; height:100%; margin:0; -webkit-appearance:none; appearance:none; border-radius:99px; background:transparent; cursor:pointer; touch-action:none; }
+.volume-slider::-webkit-slider-runnable-track { height:var(--vol-track); border-radius:99px; background:linear-gradient(180deg,#cfcfcf,#a2a2a2); box-shadow:0 1px 1px rgba(0,0,0,.8); }
+.volume-slider::-moz-range-track { height:var(--vol-track); border-radius:99px; background:#b9b9b9; }
+.volume-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:var(--vol-thumb-w); height:var(--vol-thumb-h); margin-top:calc((var(--vol-track) - var(--vol-thumb-h)) / 2); border:0; border-radius:.2cqw; background:linear-gradient(90deg,#6e6e6e 0,#e4e4e4 13%,#fcfcfc 36%,#d6d6d6 60%,#ababab 84%,#737373 100%); box-shadow:0 .1cqw .3cqw rgba(0,0,0,.9), inset 0 max(1px,.1cqw) 0 rgba(255,255,255,.75), inset 0 max(-1px,-.1cqw) 0 rgba(0,0,0,.25); }
+.volume-slider::-moz-range-thumb { width:var(--vol-thumb-w); height:var(--vol-thumb-h); border:0; border-radius:.2cqw; background:linear-gradient(90deg,#6e6e6e 0,#e4e4e4 13%,#fcfcfc 36%,#d6d6d6 60%,#ababab 84%,#737373 100%); box-shadow:0 .1cqw .3cqw rgba(0,0,0,.9), inset 0 max(1px,.1cqw) 0 rgba(255,255,255,.75); }
+.volume-slider:focus-visible { outline:1px solid #fff; outline-offset:-2px; }
+
+.track-strip, .status-line {
+  /* visually hidden, still announced (aria-live) and still updated by the script */
+  position:absolute !important;
+  width:1px !important; height:1px !important;
+  overflow:hidden !important;
+  clip-path:inset(50%) !important;
+  white-space:nowrap !important;
+  pointer-events:none;
+}
+.track-strip {
+  position:absolute;
+  z-index:6;
+  top:57%; right:3.1%;
+  display:flex;
+  align-items:center;
+  gap:.58cqw;
+  color:rgba(236,237,237,.71);
+  writing-mode:vertical-rl;
+  text-orientation:mixed;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,0,0,.8);
+}
+.artist-name { font-size:clamp(7px,1.28cqw,9px); font-weight:500; letter-spacing:.025em; }
+.strip-rule { display:block; width:1px; height:2.8cqw; min-height:12px; background:rgba(237,239,239,.32); }
+.track-name { max-height:27cqw; overflow:hidden; color:rgba(212,214,214,.72); font-size:clamp(7px,1.18cqw,8px); }
+
+.play-button {
+  position:absolute;
+  z-index:12;
+  left:3.11%; bottom:4.75%;
+  display:grid;
+  place-items:center;
+  width:9.34%; aspect-ratio:1;
+  min-width:30px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  color:#fff;
+  background:radial-gradient(circle at 40% 2%,#666 0,#5e5e5e 22%,#454545 56%,#333 82%,#2b2b2b 100%);
+  box-shadow:0 0 0 max(1.5px,.26cqw) #050505,0 .1cqw 0 max(2px,.36cqw) rgba(255,255,255,.07),0 .5cqw .9cqw rgba(0,0,0,.6),inset .03cqw max(1px,.19cqw) 0 rgba(255,255,255,.8),inset 0 0 0 1px rgba(255,255,255,.1),inset 0 -.3cqw .5cqw rgba(0,0,0,.35);
+  cursor:pointer;
+  transition:filter .15s, transform .15s;
+}
+.play-button:hover { filter:brightness(1.15); }
+.play-button:active { transform:scale(.96); }
+.play-icon, .pause-icon { width:40.5%; height:40.5%; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.pause-icon { display:none; width:42%; }
+.play-button.is-playing .play-icon { display:none; }
+.play-button.is-playing .pause-icon { display:block; }
+
+.transport-strip {
+  position:absolute;
+  z-index:12;
+  right:3.77%; bottom:6.85%;
+  width:26.86%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:2%;
+}
+.skip-button {
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  width:24.6%; aspect-ratio:1.35;
+  padding:0;
+  border:0;
+  border-radius:4px;
+  color:#fff;
+  background:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
+  cursor:pointer;
+  transition:color .15s, transform .15s;
+}
+.skip-button:hover { color:#fff; transform:scale(1.12); }
+.skip-button svg { width:62%; height:73%; overflow:visible; }
+.skip-button svg path[stroke] { stroke-width:2.9; stroke-linecap:butt; }
+.time-readout { display:flex; gap:.26cqw; align-items:center; color:#ededed; font-size:clamp(7px,1.01cqw,14px); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.time-divider { opacity:.9; }
+/* The time is small, as in the reference, so the transport strip needs no separate small-screen layout. */
+
+.status-line {
+  position:absolute;
+  z-index:6;
+  right:4.25%; bottom:2.75%;
+  display:flex;
+  align-items:center;
+  gap:.55cqw;
+  color:rgba(181,184,184,.48);
+  font-size:clamp(5px,.68cqw,6px);
+  letter-spacing:.11em;
+}
+.status-led { width:.65cqw; height:.65cqw; min-width:3px; min-height:3px; border-radius:50%; background:#424747; box-shadow:0 0 0 1px rgba(0,0,0,.45); }
+.status-led.lit { background:#d8e0dd; box-shadow:0 0 5px 2px rgba(223,239,234,.47); }
+
+.deck-screw { position:absolute; z-index:5; width:.95cqw; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 40% 30%,#a6a6a6,#5a5a5a 58%,#232323); box-shadow:0 0 0 max(1px,.15cqw) #060606; opacity:.9; }
+.screw-top { top:2.29cqw; right:2.6%; }
+.deck-screw.screw-bottom { display:none; }
+
+@keyframes vinyl-turn { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; }
+  .is-playing .record { animation:none; }
+}

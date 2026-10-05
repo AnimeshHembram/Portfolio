@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f6f8" />
+    <meta name="description" content="A quiet digital listening room, built around a tactile turntable." />
+    <title>Groove — Digital Turntable</title>
+    <link rel="icon" type="image/svg+xml" href="assets/music/m2/groove-mark.svg" />
+    <link rel="stylesheet" href="css/m2.css" />
+    <link rel="stylesheet" href="css/m2-nav.css" />
+    <!--
+      M2 — standalone Groove turntable prototype.
+
+      Built from the working Manus source in
+      Backend/resources/music/groove. Plain HTML/CSS/JS, classic
+      <script> (not type="module"), relative paths only, so it opens
+      directly via file://.
+
+      Deliberately independent of music.html, css/music.css,
+      js/music/songs-player.js and js/dock.js. Not linked from anywhere.
+      Audio is the prototype's own Web Audio synth — no music library,
+      Songs algorithm, FM or My Sounds here.
+
+      2026-10-05 — the Music page's top navbar was added (the <header>
+      below): same markup as music.html, styled by css/m2-nav.css and
+      driven by the existing js/music/gooey-nav.js, started by
+      js/music/m2-nav.js. Only the navbar: no panels, no Songs player.
+    -->
+  </head>
+  <body>
+    <header class="mus-topbar">
+      <a class="mus-topbar__home" href="index.html" aria-label="Return to portfolio home">&larr; Home</a>
+      <div class="gooey-nav-container mus-topbar__nav" id="musicNav" role="tablist" aria-label="Music navigation sections"></div>
+    </header>
+    <main class="listening-room">
+      <section class="stage" aria-label="Interactive digital turntable">
+        <groove-turntable artwork="assets/music/m2/record-artwork.png" volume="72"></groove-turntable>
+      </section>
+      <footer class="colophon" aria-hidden="true"></footer>
+    </main>
+    <script src="js/music/m2-turntable.js" defer></script>
+    <script src="js/music/gooey-nav.js" defer></script>
+    <script src="js/music/m2-nav.js" defer></script>
+  </body>
+</html>

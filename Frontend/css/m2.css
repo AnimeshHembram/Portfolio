@@ -1,0 +1,124 @@
+/*
+  M2 — page styles for the standalone Groove turntable prototype.
+
+  Source: Backend/resources/music/groove/styles.css, unchanged except
+  that the remote Google Fonts @import is replaced by the same three
+  DM Sans weights served locally (assets/music/m2/fonts/, SIL OFL 1.1).
+  The turntable itself is styled by css/m2-turntable.css, which the
+  component loads inside its shadow root.
+
+  2026-10-04 — Groove M2 design: the footer text is gone; the empty
+  footer keeps its former height (min-height rules below) so the
+  turntable sits exactly where it did.
+
+  2026-10-04 (reference match) — the deck has the reference image's
+  proportions (1.2865:1, set in css/m2-turntable.css), so the two
+  height-based width formulas below use the same ratio.
+*/
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/music/m2/fonts/dm-sans-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/music/m2/fonts/dm-sans-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/music/m2/fonts/dm-sans-600.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+  font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f6f6f8;
+  color: #1a1a1d;
+}
+
+* { box-sizing: border-box; }
+
+html, body { width: 100%; min-width: 320px; min-height: 100%; margin: 0; }
+
+body {
+  min-height: 100vh;
+  min-height: 100svh;
+  background: #f6f6f8;
+}
+
+button, input { font: inherit; }
+
+.listening-room {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 54%, rgba(255, 255, 255, .54), transparent 56%),
+    #f6f6f8;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 108px 24px 0;
+}
+
+groove-turntable {
+  display: block;
+  width: min(680px, calc(100vw - 48px), calc((100svh - 112px) * 1.2865));
+  max-width: 100%;
+  filter: drop-shadow(0 18px 24px rgba(15, 16, 19, .08));
+}
+
+.colophon {
+  display: grid;
+  grid-template-columns: 195px 155px 1fr auto;
+  align-items: end;
+  gap: 20px;
+  width: 100%;
+  padding: 0 5.1% 4.5%;
+  min-height: calc(2.76em + 1px + 4.5vw);
+  color: #232327;
+  font-size: 15px;
+  line-height: 1.38;
+  letter-spacing: -.015em;
+}
+
+.colophon-block { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.colophon-block strong { font-weight: 500; white-space: nowrap; }
+.colophon-block span { color: #96969a; white-space: nowrap; }
+.colophon-end { text-align: right; align-items: flex-end; }
+
+@media (min-width: 1500px) {
+  .colophon { font-size: 16px; }
+}
+
+@media (max-width: 620px) {
+  .stage { padding: 12px 16px 0; }
+  groove-turntable { width: min(100%, calc((100svh - 138px) * 1.2865)); }
+  .colophon { grid-template-columns: 1fr 1fr; gap: 10px 18px; padding: 0 20px 18px; font-size: 10px; }
+  .colophon:empty { min-height: calc(5.52em + 30px); }
+  .colophon-end { grid-column: 2; grid-row: 1; }
+}
+
+@media (max-height: 540px) and (min-width: 621px) {
+  .stage { padding-top: 8px; }
+  .colophon { padding-bottom: 12px; font-size: 10px; }
+  .colophon:empty { min-height: calc(2.76em + 13px); }
+}

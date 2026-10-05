@@ -53,70 +53,52 @@ document.addEventListener("DOMContentLoaded", function () {
     if (tabs[i]) a.id = tabs[i];
   });
 
-  // ---- Songs: Cassette Player ------------------------------------------
+  // ---- Songs: player ------------------------------------------------------
   // Reference assets stay where they already are (assets/New folder/
-  // CassettePlayer/…) rather than being copied — the space in "New
-  // folder" just needs URL-encoding for file:// to resolve it. The four
-  // songs listed are the demo tracks bundled with the reference
-  // implementation (temporary placeholder — see the note printed under
-  // the player in music.html); swapping in the real library later is a
-  // matter of changing this options object, not this file's logic.
-  var vcContainer = document.getElementById("vc-container");
-  if (vcContainer && window.Music && window.Music.createCassettePlayer) {
-    var CASSETTE_BASE = "assets/New%20folder/CassettePlayer/";
-    window.Music.createCassettePlayer(vcContainer, {
+  // CassettePlayer/songs/…) rather than being copied — the space in "New
+  // folder" just needs URL-encoding for file:// to resolve it. These four
+  // tracks are the same temporary placeholders the earlier CassettePlayer
+  // used (see the note printed under the player in music.html), just
+  // reshaped into the { title, artist, albumArt, audio } objects
+  // songs-player.js expects — that shape is exactly what
+  // Backend/resources/music is meant to hand this later (Phase 2/3), so
+  // swapping in the real library means changing this array, not this
+  // file's logic or songs-player.js itself. albumArt is a single shared
+  // placeholder SVG since no real artwork exists yet either.
+  var songsPlayerEl = document.getElementById("songsPlayer");
+  if (songsPlayerEl && window.Music && window.Music.createSongsPlayer) {
+    var CASSETTE_SONGS_BASE = "assets/New%20folder/CassettePlayer/songs/";
+    var PLACEHOLDER_ART = "assets/music/placeholder-cover.svg";
+
+    window.Music.createSongsPlayer(songsPlayerEl, {
       songs: [
-        "BlueDucks_FourFlossFiveSix",
-        "BlankKytt_ThursdaySnowReprise",
-        "BlueDucks_FlossSuffersFromGammaRadiation",
-        "BlankKyt_RSPN",
+        {
+          title: "Four Floss Five Six",
+          artist: "Blue Ducks",
+          albumArt: PLACEHOLDER_ART,
+          audio: CASSETTE_SONGS_BASE + "BlueDucks_FourFlossFiveSix.mp3",
+        },
+        {
+          title: "Thursday Snow (Reprise)",
+          artist: "Blank & Kytt",
+          albumArt: PLACEHOLDER_ART,
+          audio: CASSETTE_SONGS_BASE + "BlankKytt_ThursdaySnowReprise.mp3",
+        },
+        {
+          title: "Floss Suffers From Gamma Radiation",
+          artist: "Blue Ducks",
+          albumArt: PLACEHOLDER_ART,
+          audio:
+            CASSETTE_SONGS_BASE +
+            "BlueDucks_FlossSuffersFromGammaRadiation.mp3",
+        },
+        {
+          title: "RSPN",
+          artist: "Blank & Kytt",
+          albumArt: PLACEHOLDER_ART,
+          audio: CASSETTE_SONGS_BASE + "BlankKyt_RSPN.mp3",
+        },
       ],
-      songsBasePath: CASSETTE_BASE + "songs/",
-      soundsBasePath: CASSETTE_BASE + "sounds/",
-      initialVolume: 0.7,
     });
-  }
-
-  // The cassette widget's CSS (adapted from the reference's own
-  // style.css/knobKnob.css) assumes its original ~672px-wide layout —
-  // that's what the tape, control bar and volume-knob offsets are all
-  // measured against, and reflowing that at narrow widths would distort
-  // the design the user asked to preserve. So .mus-cassette__stage keeps
-  // its natural size and is scaled down as a whole (never up) to fit
-  // whatever width the Songs panel actually has, instead of being
-  // redesigned to be "responsive" — no horizontal overflow, no
-  // distortion, same proportions at every size.
-  var stage = document.querySelector(".mus-cassette__stage");
-  var stageOuter = document.querySelector(".mus-cassette");
-  if (stage && stageOuter && "ResizeObserver" in window) {
-    var naturalWidth = 0;
-    var naturalHeight = 0;
-
-    function measureNatural() {
-      // Measure unscaled: momentarily clear the transform so
-      // getBoundingClientRect reports the stage's true natural size,
-      // not whatever it was last scaled to.
-      var prevTransform = stage.style.transform;
-      stage.style.transform = "none";
-      naturalWidth = stage.offsetWidth;
-      naturalHeight = stage.offsetHeight;
-      stage.style.transform = prevTransform;
-    }
-
-    function applyScale() {
-      if (!naturalWidth) measureNatural();
-      if (!naturalWidth) return;
-
-      var available = stageOuter.clientWidth;
-      var scale = Math.min(1, available / naturalWidth);
-
-      stage.style.transform = "scale(" + scale + ")";
-      stageOuter.style.height = Math.ceil(naturalHeight * scale) + "px";
-    }
-
-    measureNatural();
-    applyScale();
-
-    new ResizeObserver(applyScale).observe(stageOuter);
   }
 });

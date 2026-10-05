@@ -1,0 +1,445 @@
+/* ---------------------------------------------------------------------
+   M2 — top navigation bar (the Music page's navbar, on M2)
+   ---------------------------------------------------------------------
+   Source: the navbar in music.html / css/music.css — .mus-topbar,
+   .mus-topbar__home, .mus-topbar__nav / #musicNav — and the GooeyNav
+   component CSS that js/music/gooey-nav.js drives. Markup, class names,
+   ids, sizes, spacing, font, timings and keyframes are the same as
+   there. This file is loaded only by m2.html; css/music.css is NOT
+   loaded on M2 (it also styles the dark page and the Songs player).
+
+   What differs from css/music.css, and why:
+
+   1. Colours are inverted for M2's light page (the user's choice,
+      2026-10-05): dark text, black active pill with white text. The
+      Gooey effect is the exact negative of the original — white
+      backdrop instead of black, black blobs instead of white, particle
+      greys inverted one for one, and mix-blend-mode "darken" instead of
+      "lighten" — so the blur/contrast metaball trick behaves the same.
+
+   2. The header is position: absolute instead of fixed, and has no
+      ::before backdrop. On the Music page the header is a stacking
+      context, so the effect's blend needs an opaque page-coloured
+      backdrop painted inside it (music.css explains this at length).
+      That backdrop would paint over the top of the turntable here.
+      Without a stacking context the effect blends with the real page
+      behind it, so nothing has to be painted over anything. M2's page
+      normally fits the window, so absolute and fixed look the same; in a
+      short desktop window where the page scrolls a little, the navbar
+      scrolls with it instead of staying pinned.
+
+   3. Home and the nav get z-index: 1 so they sit above .listening-room
+      (which is position: relative and comes later in the page).
+
+   4. Inter is served locally (assets/music/m2/fonts/, SIL OFL 1.1)
+      instead of from Google Fonts, like the rest of M2.
+
+   The last block ("room for the navbar") touches M2's .stage, in M2's two
+   compact layouts only, and changes nothing unless the turntable would
+   otherwise sit underneath the navbar; see the note there.
+   ------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/music/m2/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/music/m2/fonts/inter-600.woff2') format('woff2');
+}
+
+.mus-topbar {
+  /* Music palette, inverted for a light page */
+  --mus-paper: #ffffff;
+  --mus-ink: #1c1c1c;
+  --mus-red: #fd453a;
+  --mus-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --m2-nav-text: var(--mus-ink);   /* was white */
+  --m2-nav-pill: #000000;          /* was white */
+  --m2-nav-on-pill: #ffffff;       /* was black */
+  --m2-nav-backdrop: #ffffff;      /* was black */
+
+  /* GooeyNav particle colours — music.css's greys, inverted one for one
+     (#ffffff, #d9d9d9, #a6a6a6, #737373) */
+  --color-1: #000000;
+  --color-2: #262626;
+  --color-3: #595959;
+  --color-4: #8c8c8c;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(1rem, 2.5vw, 1.75rem) clamp(1.25rem, 3vw, 2rem);
+
+  /* The Music page sets these on <body>; M2's page uses DM Sans and its
+     own text rendering, so they are set here for the navbar only. */
+  font-family: var(--mus-font);
+  font-size: 1rem;
+  font-weight: 400;
+  font-synthesis: weight style;
+  line-height: normal;
+  letter-spacing: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  color: var(--m2-nav-text);
+  /* The strip itself never takes clicks, so it cannot get in the way of
+     the turntable; Home and the nav switch this back on. */
+  pointer-events: none;
+}
+
+.mus-topbar,
+.mus-topbar *,
+.mus-topbar *::before,
+.mus-topbar *::after {
+  box-sizing: border-box;
+}
+
+.mus-topbar__home {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  color: var(--m2-nav-text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.mus-topbar__home:hover,
+.mus-topbar__home:focus-visible {
+  /* same red pill with white text as on the Music page */
+  background: rgba(253, 69, 58, 0.85);
+  color: var(--mus-paper);
+  transform: translateY(-1px);
+}
+
+.mus-topbar__home:focus-visible {
+  outline: 2px solid var(--m2-nav-text);
+  outline-offset: 2px;
+}
+
+/* Centred in the header on both axes, exactly as on the Music page
+   (#musicNav by id for the same cascade reason given in music.css). */
+#musicNav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  width: max-content;
+  height: max-content;
+  max-width: calc(100vw - 1rem);
+  pointer-events: auto;
+}
+
+/* ---- responsive tweaks (from music.css) ------------------------------- */
+
+@media (max-width: 640px) {
+  .gooey-nav-container nav ul {
+    gap: 0.5em;
+    padding: 0 0.35em;
+  }
+
+  .gooey-nav-container nav ul li a {
+    padding: 0.5em 0.6em;
+    font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mus-topbar__home {
+    transition: none;
+  }
+}
+
+/* =======================================================================
+   GooeyNav — the component CSS from music.css, colours inverted (see top)
+   ======================================================================= */
+
+.gooey-nav-container {
+  position: relative;
+}
+
+.gooey-nav-container nav {
+  display: flex;
+  position: relative;
+  z-index: 1; /* not in music.css: lifts the nav above .listening-room */
+  transform: translate3d(0, 0, 0.01px);
+}
+
+.gooey-nav-container nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2em;
+  list-style: none;
+  padding: 0 1em;
+  margin: 0;
+  position: relative;
+  z-index: 3;
+  color: var(--m2-nav-text);
+  text-shadow: 0 1px 1px hsl(205deg 30% 90% / 0.2);
+}
+
+.gooey-nav-container nav ul li {
+  border-radius: 100vw;
+  position: relative;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
+  box-shadow: 0 0 0.5px 1.5px transparent;
+  color: var(--m2-nav-text);
+}
+
+.gooey-nav-container nav ul li a {
+  display: inline-block;
+  padding: 0.6em 1em;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gooey-nav-container nav ul li a:focus {
+  outline: none;
+}
+
+.gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
+  box-shadow: 0 0 0.5px 1.5px var(--m2-nav-text);
+}
+
+.gooey-nav-container nav ul li::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--m2-nav-pill);
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.gooey-nav-container nav ul li.active {
+  color: var(--m2-nav-on-pill);
+  text-shadow: none;
+}
+
+.gooey-nav-container nav ul li.active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.gooey-nav-container .effect {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 1;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.gooey-nav-container .effect.text {
+  color: var(--m2-nav-text);
+  transition: color 0.3s ease;
+}
+
+.gooey-nav-container .effect.text.active {
+  color: var(--m2-nav-on-pill);
+}
+
+.gooey-nav-container .effect.filter {
+  filter: blur(7px) contrast(100) blur(0);
+  mix-blend-mode: darken; /* "lighten" on the dark Music page */
+}
+
+.gooey-nav-container .effect.filter::before {
+  content: "";
+  position: absolute;
+  inset: -75px;
+  z-index: -2;
+  background: var(--m2-nav-backdrop);
+}
+
+.gooey-nav-container .effect.filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--m2-nav-pill);
+  transform: scale(0);
+  opacity: 0;
+  z-index: -1;
+  border-radius: 100vw;
+}
+
+.gooey-nav-container .effect.active::after {
+  animation: pill 0.3s ease both;
+}
+
+@keyframes pill {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.particle,
+.point {
+  display: block;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  transform-origin: center;
+}
+
+.particle {
+  --time: 5s;
+  position: absolute;
+  top: calc(50% - 8px);
+  left: calc(50% - 8px);
+  animation: particle calc(var(--time)) ease 1 -350ms;
+}
+
+.point {
+  background: var(--color);
+  opacity: 1;
+  animation: point calc(var(--time)) ease 1 -350ms;
+}
+
+@keyframes particle {
+  0% {
+    transform: rotate(0deg) translate(calc(var(--start-x)), calc(var(--start-y)));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  70% {
+    transform: rotate(calc(var(--rotate) * 0.5)) translate(calc(var(--end-x) * 1.2), calc(var(--end-y) * 1.2));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+
+  85% {
+    transform: rotate(calc(var(--rotate) * 0.66)) translate(calc(var(--end-x)), calc(var(--end-y)));
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
+    opacity: 1;
+  }
+}
+
+@keyframes point {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  25% {
+    transform: scale(calc(var(--scale) * 0.25));
+  }
+
+  38% {
+    opacity: 1;
+  }
+
+  65% {
+    transform: scale(var(--scale));
+    opacity: 1;
+    animation-timing-function: ease;
+  }
+
+  85% {
+    transform: scale(var(--scale));
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* =======================================================================
+   Room for the navbar (small windows only)
+   =======================================================================
+   On desktop-size windows M2 keeps the turntable at least 108px from the
+   top, which is already below the navbar, so nothing here applies and
+   M2's layout is untouched.
+
+   M2 has two compact layouts with almost no top padding: phones (up to
+   620px wide, 12px) and short wide windows (up to 540px tall, 8px). In
+   those, when the window is also short for its width — a phone held
+   sideways, mostly — the turntable sits near the top and would end up
+   underneath the navbar.
+
+   For those two layouts only, the same centring is written as three grid
+   rows, and the top row has a minimum of the navbar's height. Wherever the
+   turntable was already clear of the navbar it lands on exactly the same
+   pixel as before; where it was not, it stops just below the navbar. Its
+   size never changes, and the page does not start scrolling: the stage is
+   allowed to reach into the empty footer space underneath.
+
+   Why the position is unchanged: the old top edge is
+     pad + (stage - pad - turntable) / 2
+   The stage now starts (ext - pad) higher and ends ext lower, with no top
+   padding, so its equal top and bottom rows put the top edge at
+     (pad - ext) + (stage + 2*ext - pad - turntable) / 2
+   which is the same value.
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 620px), (max-height: 540px) and (min-width: 621px) {
+  .stage {
+    /* navbar height: its top and bottom padding plus the Home pill */
+    --m2-nav-clear: calc(2 * clamp(1rem, 2.5vw, 1.75rem) + 2.2rem);
+    --m2-stage-pad: 12px;  /* M2's own top padding in this layout */
+    --m2-stage-ext: 40px;  /* how far the stage may reach into the footer */
+    padding-top: 0;
+    margin-top: calc(var(--m2-stage-pad) - var(--m2-stage-ext));
+    margin-bottom: calc(-1 * var(--m2-stage-ext));
+    /* An explicit height (its grid area plus the two overhangs) instead of
+       stretching, so these rows never make the page itself any taller. */
+    height: 0;
+    min-height: calc(100% + 2 * var(--m2-stage-ext) - var(--m2-stage-pad));
+    grid-template-rows:
+      minmax(calc(var(--m2-nav-clear) + var(--m2-stage-ext) - var(--m2-stage-pad)), 1fr)
+      auto
+      minmax(0, 1fr);
+  }
+
+  .stage > groove-turntable {
+    grid-row: 2;
+  }
+}
+
+@media (max-height: 540px) and (min-width: 621px) {
+  .stage { --m2-stage-pad: 8px; }
+}
