@@ -20,7 +20,13 @@ document.addEventListener("DOMContentLoaded", function () {
   var items = [{ label: "Songs" }, { label: "My Sounds" }, { label: "FM" }];
   var tabs = ["tab-songs", "tab-my-sounds", "tab-fm"];
 
-  window.Music.createGooeyNav({
+  // 2026-10-07 — FM opens the standalone Radio page. Songs and My Sounds
+  // are unchanged.
+  var FM_URL = "Radio/radio.html";
+
+  var leftForRadio = false;
+
+  var nav = window.Music.createGooeyNav({
     container: navContainer,
     items: items,
     particleCount: 15,
@@ -36,7 +42,20 @@ document.addEventListener("DOMContentLoaded", function () {
           detail: { index: index, label: items[index].label },
         })
       );
+      if (items[index].label === "FM") {
+        leftForRadio = true;
+        window.location.href = FM_URL;
+      }
     },
+  });
+
+  // Returning from the Radio with the browser's Back button can restore
+  // this page exactly as it was left, with FM still marked active (and so
+  // not clickable again): put the marker back on Songs.
+  window.addEventListener("pageshow", function (event) {
+    if (!event.persisted || !leftForRadio) return;
+    leftForRadio = false;
+    nav.setActive(0);
   });
 
   // Same stable ids main.js gives the links on the Music page.
