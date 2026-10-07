@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#030404" />
+    <meta name="description" content="A static metallic radio hardware and touchscreen prototype." />
+    <title>Radio 92.5 — Hardware Prototype</title>
+    <link rel="stylesheet" href="css/radio.css" />
+    <!--
+      Radio — standalone FM radio page.
+
+      Same implementation as the tested archive in
+      Backend/resources/radio92 (React + TypeScript), separated into its
+      own folder. The source is in js/src/ and is compiled into
+      js/radio.js, a plain classic <script> (not type="module"), with
+      relative paths only, so this page opens directly via file://.
+
+      js/radio.js is generated: change js/src/ and rebuild
+      (npm install, then npm run build, in this folder).
+
+      Station data comes straight from the public Radio Browser
+      directory; there is no backend. See Backend/radio/README.md.
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="js/radio.js" defer></script>
+  </body>
+</html>

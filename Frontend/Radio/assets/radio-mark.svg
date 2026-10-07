@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="240" viewBox="0 0 384 240" fill="none">
+  <defs>
+    <linearGradient id="case" x1="22" y1="24" x2="362" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0E2E3"/><stop offset=".12" stop-color="#737678"/><stop offset=".28" stop-color="#202223"/><stop offset=".76" stop-color="#101213"/><stop offset="1" stop-color="#8A8D8F"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="44" y1="56" x2="128" y2="184" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1D2D3"/><stop offset=".48" stop-color="#929596"/><stop offset="1" stop-color="#BFC1C2"/>
+    </linearGradient>
+    <radialGradient id="dial" cx="0" cy="0" r="1" gradientTransform="matrix(0 58 -58 0 85 120)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9DADB"/><stop offset=".72" stop-color="#96999A"/><stop offset="1" stop-color="#56595A"/>
+    </radialGradient>
+    <pattern id="holes" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="2.5" fill="#191B1C"/>
+      <circle cx="5.3" cy="5.3" r=".65" fill="#E0E1E2" fill-opacity=".72"/>
+    </pattern>
+  </defs>
+  <rect x="13" y="22" width="358" height="196" rx="27" fill="url(#case)" stroke="#D5D7D8" stroke-width="2"/>
+  <rect x="25" y="34" width="334" height="172" rx="21" fill="#080A0B" stroke="#777A7C" stroke-width="2"/>
+  <rect x="35" y="45" width="93" height="150" rx="12" fill="url(#metal)" stroke="#E6E7E8"/>
+  <circle cx="85" cy="120" r="41" fill="#393C3D" stroke="#E3E4E5" stroke-width="3"/>
+  <circle cx="85" cy="120" r="35" fill="url(#dial)" stroke="#55595A"/>
+  <circle cx="85" cy="120" r="38.5" stroke="#242728" stroke-width="5" stroke-dasharray="1.4 2"/>
+  <rect x="133" y="45" width="117" height="150" rx="11" fill="#070809" stroke="#292C2D" stroke-width="2"/>
+  <rect x="255" y="45" width="93" height="150" rx="12" fill="url(#metal)" stroke="#E6E7E8"/>
+  <rect x="263" y="54" width="77" height="132" rx="5" fill="url(#holes)"/>
+  <circle cx="48" cy="58" r="4" fill="#F4F5F5"/>
+</svg>
