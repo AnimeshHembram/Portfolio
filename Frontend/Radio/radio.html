@@ -7,6 +7,8 @@
     <meta name="description" content="A static metallic radio hardware and touchscreen prototype." />
     <title>Radio 92.5 — Hardware Prototype</title>
     <link rel="stylesheet" href="css/radio.css" />
+    <link rel="stylesheet" href="../css/m2-nav.css" />
+    <link rel="stylesheet" href="css/radio-nav.css" />
     <!--
       Radio — standalone FM radio page.
 
@@ -21,10 +23,24 @@
 
       Station data comes straight from the public Radio Browser
       directory; there is no backend. See Backend/radio/README.md.
+
+      2026-10-07 — the Music/M2 top navbar was added (the <header>
+      below): same markup as m2.html, styled by the same ../css/m2-nav.css
+      (unchanged), driven by the same ../js/music/gooey-nav.js and started
+      by js/radio-nav.js with FM active. M2's page is light, so
+      m2-nav.css carries the navbar's colours inverted; css/radio-nav.css
+      only puts the original dark-page colours back (white text, white
+      active pill) for this dark page. The radio itself is unchanged.
     -->
   </head>
   <body>
+    <header class="mus-topbar">
+      <a class="mus-topbar__home" href="../index.html" aria-label="Return to portfolio home">&larr; Home</a>
+      <div class="gooey-nav-container mus-topbar__nav" id="musicNav" role="tablist" aria-label="Music navigation sections"></div>
+    </header>
     <div id="root"></div>
     <script src="js/radio.js" defer></script>
+    <script src="../js/music/gooey-nav.js" defer></script>
+    <script src="js/radio-nav.js" defer></script>
   </body>
 </html>

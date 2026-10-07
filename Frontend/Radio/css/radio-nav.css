@@ -1,0 +1,40 @@
+/* ---------------------------------------------------------------------
+   Radio — top navigation bar (the Music page's navbar, on the Radio page)
+   ---------------------------------------------------------------------
+   The navbar itself is ../../css/m2-nav.css, loaded unchanged by
+   radio.html just before this file: same markup, class names, ids, sizes,
+   spacing, font, timings and keyframes as on M2.
+
+   M2's page is light, so m2-nav.css carries the navbar's colours
+   inverted. The Radio page is dark, like the Music page the navbar was
+   designed for, so this file only puts the original colours from
+   css/music.css back: white text, white active pill with black text,
+   black effect backdrop, the original particle greys and
+   mix-blend-mode "lighten".
+
+   Nothing here styles the radio.
+   ------------------------------------------------------------------- */
+
+.mus-topbar {
+  --m2-nav-text: #ffffff;
+  --m2-nav-pill: #ffffff;
+  --m2-nav-on-pill: #000000;
+  --m2-nav-backdrop: #000000;
+
+  --color-1: #ffffff;
+  --color-2: #d9d9d9;
+  --color-3: #a6a6a6;
+  --color-4: #737373;
+}
+
+.mus-topbar__home {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gooey-nav-container nav ul {
+  text-shadow: 0 1px 1px hsl(205deg 30% 10% / 0.2);
+}
+
+.gooey-nav-container .effect.filter {
+  mix-blend-mode: lighten;
+}
