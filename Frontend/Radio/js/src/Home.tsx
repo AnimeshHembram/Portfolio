@@ -1,9 +1,15 @@
 import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  KNOB_SETTLE_MS,
+  createCityListLoader,
+  createLocationTuner,
   createStationPlayer,
   radioDirectory,
   stationFrequencyTenths,
+  type CityListLoader,
+  type LocalTuneResult,
+  type LocationTuner,
   type RadioCity,
   type RadioCountry,
   type RadioStation,
@@ -84,10 +90,12 @@ export default function Home() {
   const searchFocusRef = useRef<SearchFocus>("country");
   const locationsRef = useRef<RadioCity[]>([]);
   const locationStationsRef = useRef<RadioStation[]>([]);
-  const countryCacheRef = useRef(new Map<string, RadioCity[]>());
+  const cityLoaderRef = useRef<CityListLoader | null>(null);
+  const countrySettleRef = useRef(0);
   const countriesRequestedRef = useRef(false);
-  const countryRequestIdRef = useRef(0);
   const cityRequestIdRef = useRef(0);
+  const cityAbortRef = useRef<AbortController | null>(null);
+  const locationTunerRef = useRef<LocationTuner | null>(null);
   const knobGestureRef = useRef<KnobGesture | null>(null);
   const suppressClickRef = useRef(false);
   const stationButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -132,51 +140,43 @@ export default function Home() {
     }
   }, []);
 
+  // Starts when the page opens, so the list is ready before SEARCH STATION is touched.
+  // Opening SEARCH tries again if an earlier attempt failed.
   useEffect(() => {
-    if (mode === "search" && poweredOn && countries.length === 0) void loadCountries();
+    if (poweredOn && countries.length === 0) void loadCountries();
   }, [mode, poweredOn, countries.length, loadCountries]);
+
+  // One loader for the chosen country's city list. It answers at once from the cache, waits
+  // for the knob to settle before asking the directory, and cancels a request that a newer
+  // choice has replaced.
+  if (!cityLoaderRef.current) {
+    cityLoaderRef.current = createCityListLoader((result) => {
+      if (result.status === "loading") {
+        setLocationsLoading(true);
+        updateLocations([]);
+        updateLocationStations([]);
+        updateCityQuery("");
+        setStationsLoading(false);
+        setSearchMessage("LOADING LOCATION DATA…");
+        setSearchError("");
+      } else if (result.status === "ready") {
+        updateLocations(result.cities);
+        setLocationsLoading(false);
+        setSearchMessage(result.cities.length ? "CHOOSE A CITY / AREA" : "NO LOCATION DATA IN DIRECTORY");
+      } else {
+        setSearchError("LOCATION DATA UNAVAILABLE");
+        setSearchMessage("");
+        setLocationsLoading(false);
+      }
+    });
+  }
+  const cityLoader = cityLoaderRef.current;
 
   useEffect(() => {
     const country = countries.find((entry) => entry.iso_3166_1 === countryCode);
     if (mode !== "search" || !poweredOn || !country) return;
-    const requestId = ++countryRequestIdRef.current;
-    const cached = countryCacheRef.current.get(countryCode);
-    if (cached) {
-      updateLocations(cached);
-      setLocationsLoading(false);
-      setSearchMessage(cached.length ? "CHOOSE A CITY / AREA" : "NO LOCATION DATA IN DIRECTORY");
-      return;
-    }
-
-    setLocationsLoading(true);
-    updateLocations([]);
-    updateLocationStations([]);
-    updateCityQuery("");
-    setStationsLoading(false);
-    setSearchMessage("LOADING LOCATION DATA…");
-    setSearchError("");
-
-    void radioDirectory
-      .listCountryCities(country)
-      .then((cities) => {
-        if (requestId !== countryRequestIdRef.current) return;
-        countryCacheRef.current.set(countryCode, cities);
-        updateLocations(cities);
-        setSearchMessage(cities.length ? "CHOOSE A CITY / AREA" : "NO LOCATION DATA IN DIRECTORY");
-      })
-      .catch(() => {
-        if (requestId !== countryRequestIdRef.current) return;
-        setSearchError("LOCATION DATA UNAVAILABLE");
-        setSearchMessage("");
-      })
-      .finally(() => {
-        if (requestId === countryRequestIdRef.current) setLocationsLoading(false);
-      });
-
-    return () => {
-      if (countryRequestIdRef.current === requestId) countryRequestIdRef.current += 1;
-    };
-  }, [countries, countryCode, mode, poweredOn, updateCityQuery, updateLocations, updateLocationStations]);
+    cityLoader.load(country, countrySettleRef.current);
+  }, [cityLoader, countries, countryCode, mode, poweredOn]);
 
   useEffect(() => {
     if (searchFocus !== "station" || mode !== "search") return;
@@ -214,8 +214,68 @@ export default function Home() {
   useEffect(() => {
     return () => {
       player.stop();
+      cityLoader.cancel();
+      cityAbortRef.current?.abort();
     };
-  }, [player]);
+  }, [player, cityLoader]);
+
+  // Puts the station found for the listener's own city on the radio, exactly as if it had been
+  // chosen in SEARCH STATION, but without starting it: browsers do not let a page start sound
+  // by itself, so it starts on the listener's first action (see startAutoStation).
+  function applyLocalStation(result: LocalTuneResult) {
+    const { station } = result;
+    updateCurrentStation(station);
+    const stationFrequency = stationFrequencyTenths(station);
+    if (stationFrequency !== null) {
+      frequencyRef.current = stationFrequency;
+      setFrequencyTenths(stationFrequency);
+      setHasTuned(true);
+    }
+
+    // The same place is selected in SEARCH STATION, and its stations are the ones CHANNEL tunes through.
+    countryCodeRef.current = result.country.iso_3166_1;
+    setCountryCode(result.country.iso_3166_1);
+    if (result.city) {
+      updateLocations(result.cities);
+      updateCityQuery(result.city.label);
+    }
+    updateLocationStations(result.stations);
+    setFocusedStationIndex(Math.max(0, result.stations.findIndex((entry) => entry.stationuuid === station.stationuuid)));
+    setSearchMessage(displayCount(result.stations.length));
+  }
+
+  // Starts when the radio is on screen, in the background: the radio never waits for it.
+  useEffect(() => {
+    const tuner = createLocationTuner({ onTuned: applyLocalStation });
+    locationTunerRef.current = tuner;
+    tuner.start();
+    return () => tuner.cancel();
+  }, []);
+
+  // The listener has started choosing for themselves: whatever the automatic search finds
+  // from now on is dropped, so it can never replace their choice.
+  function discardLocalStation() {
+    locationTunerRef.current?.cancel();
+  }
+
+  // Starts the automatically chosen station on the listener's first action. True when it did.
+  function startAutoStation() {
+    const station = locationTunerRef.current?.claimStart();
+    if (!station || !poweredRef.current) return false;
+    startPlayback(station);
+    return true;
+  }
+
+  function handleStageClickCapture(event: React.MouseEvent<HTMLElement>) {
+    if (!startAutoStation()) return;
+    // A first press on the knob starts the station instead of switching the radio off.
+    if (event.target instanceof Element && event.target.closest(".volume-knob")) event.stopPropagation();
+  }
+
+  function handleStageKeyDownCapture(event: React.KeyboardEvent<HTMLElement>) {
+    // Enter and Space arrive as a click; the arrow keys are the knob's keys.
+    if (event.key.startsWith("Arrow")) startAutoStation();
+  }
 
   function clearAudioMessage() {
     setPlaybackMessage("");
@@ -232,6 +292,7 @@ export default function Home() {
   }
 
   function togglePower() {
+    discardLocalStation();
     if (poweredRef.current) {
       poweredRef.current = false;
       player.stop();
@@ -262,6 +323,7 @@ export default function Home() {
   }
 
   function tune(direction: number) {
+    discardLocalStation();
     const next = Math.max(MIN_FREQUENCY_TENTHS, Math.min(MAX_FREQUENCY_TENTHS, frequencyRef.current + direction));
     frequencyRef.current = next;
     setFrequencyTenths(next);
@@ -281,10 +343,15 @@ export default function Home() {
     }
   }
 
-  function selectCountry(code: string) {
+  // `settleMs` is how long to wait for further changes before asking the directory
+  // (used when the knob steps through countries).
+  function selectCountry(code: string, settleMs = 0) {
     countryCodeRef.current = code;
     setCountryCode(code);
+    countrySettleRef.current = settleMs;
+    cityLoader.cancel();
     cityRequestIdRef.current += 1;
+    cityAbortRef.current?.abort();
     setStationsLoading(false);
     updateCityQuery("");
     updateLocations([]);
@@ -293,6 +360,8 @@ export default function Home() {
     setSearchError("");
     setSearchMessage(code ? "LOADING LOCATION DATA…" : "CHOOSE A COUNTRY");
     focusSearch("country");
+    const country = countries.find((entry) => entry.iso_3166_1 === code);
+    if (country) cityLoader.load(country, settleMs);
   }
 
   async function searchCity(location: string) {
@@ -304,12 +373,19 @@ export default function Home() {
     }
 
     const requestId = ++cityRequestIdRef.current;
+    const superseded = cityAbortRef.current;
+    const request = new AbortController();
+    cityAbortRef.current = request;
     setStationsLoading(true);
     setSearchError("");
     setSearchMessage("SEARCHING VERIFIED STREAMS…");
     focusSearch("station");
     try {
-      const stations = await radioDirectory.listCityStations(countryCodeRef.current, city);
+      const pending = radioDirectory.listCityStations(countryCodeRef.current, city, request.signal);
+      // Leave the earlier search only now, so asking for the same city again joins the
+      // request already on its way instead of restarting it.
+      superseded?.abort();
+      const stations = await pending;
       if (requestId !== cityRequestIdRef.current) return;
       updateLocationStations(stations);
       setFocusedStationIndex(0);
@@ -325,6 +401,7 @@ export default function Home() {
   }
 
   function chooseStation(station: RadioStation) {
+    discardLocalStation();
     updateCurrentStation(station);
     const stationFrequency = stationFrequencyTenths(station);
     if (stationFrequency !== null) {
@@ -338,6 +415,8 @@ export default function Home() {
 
   function chooseScreenMode(nextMode: ScreenMode) {
     if (!poweredRef.current) return;
+    // Searching or tuning is the listener's own choice (adjusting the volume is not).
+    if (nextMode !== "volume") discardLocalStation();
     if (mode === "search" && nextMode === "search") {
       setMode("normal");
       return;
@@ -352,7 +431,7 @@ export default function Home() {
       const currentIndex = countries.findIndex((country) => country.iso_3166_1 === countryCodeRef.current);
       const start = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
       const nextIndex = (start + direction + countries.length) % countries.length;
-      selectCountry(countries[nextIndex].iso_3166_1);
+      selectCountry(countries[nextIndex].iso_3166_1, KNOB_SETTLE_MS);
       return;
     }
 
@@ -453,6 +532,7 @@ export default function Home() {
       return;
     }
     cityRequestIdRef.current += 1;
+    cityAbortRef.current?.abort();
     setStationsLoading(false);
     updateLocationStations([]);
     setSearchMessage("CHOOSE A CITY / AREA");
@@ -468,7 +548,12 @@ export default function Home() {
   const channelStationName = currentStation?.name ?? (locationStations.length ? "NO STATION" : "SEARCH FOR A LOCATION");
 
   return (
-    <main className={`radio-stage${poweredOn ? "" : " radio-is-off"}`} aria-label="Radio 92.5">
+    <main
+      className={`radio-stage${poweredOn ? "" : " radio-is-off"}`}
+      aria-label="Radio 92.5"
+      onClickCapture={handleStageClickCapture}
+      onKeyDownCapture={handleStageKeyDownCapture}
+    >
       <div className="radio-canvas">
         <section className="radio-housing" aria-label="Metal radio body">
           <div className="radio-face">
