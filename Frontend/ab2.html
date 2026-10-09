@@ -35,8 +35,29 @@
 <body>
 
   <header class="ab2-bar">
-    <a class="ab2-bar__link" href="index.html">&larr; Home</a>
-    <span class="ab2-bar__tag" aria-hidden="true">About / AB2</span>
+    <!-- Navigation control: A (rest) → H (hover) → X (open). The letter is
+         three bars that morph between the shapes; see "AB2 navigation
+         control" in css/ab2.css and js/ab2/nav.js. Projects, Resume and
+         Switch have no destination in the portfolio yet, so they are shown
+         but inactive (no invented URLs). -->
+    <nav class="ab2-nav" id="ab2-nav" aria-label="Site navigation">
+      <button class="ab2-nav__btn" type="button" id="ab2-nav-btn"
+              aria-label="Open navigation" aria-expanded="false" aria-controls="ab2-nav-menu">
+        <span class="ab2-nav__glyph" aria-hidden="true">
+          <span class="ab2-nav__bar ab2-nav__bar--l"></span>
+          <span class="ab2-nav__bar ab2-nav__bar--r"></span>
+          <span class="ab2-nav__bar ab2-nav__bar--c"></span>
+        </span>
+      </button>
+      <ul class="ab2-nav__menu" id="ab2-nav-menu">
+        <li><a class="ab2-nav__item" href="index.html">Home</a></li>
+        <li><a class="ab2-nav__item" href="infinite-gallery.html">Gallery</a></li>
+        <li><a class="ab2-nav__item" href="m2.html">Music</a></li>
+        <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Projects</span></li>
+        <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Resume</span></li>
+        <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Switch</span></li>
+      </ul>
+    </nav>
     <button class="ab2-bar__toggle" type="button" id="ab2-toggle" hidden>2D view</button>
   </header>
 
@@ -88,5 +109,6 @@
   <script src="js/ab2/projector.js" defer></script>
   <script src="js/ab2/scene.js" defer></script>
   <script src="js/ab2/main.js" defer></script>
+  <script src="js/ab2/nav.js" defer></script>
 </body>
 </html>
