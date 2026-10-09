@@ -8,6 +8,7 @@
     <title>Radio 92.5 — Hardware Prototype</title>
     <link rel="stylesheet" href="css/radio.css" />
     <link rel="stylesheet" href="../css/m2-nav.css" />
+    <link rel="stylesheet" href="../css/m2-site-nav.css" />
     <link rel="stylesheet" href="css/radio-nav.css" />
     <!--
       Radio — standalone FM radio page.
@@ -31,16 +32,52 @@
       m2-nav.css carries the navbar's colours inverted; css/radio-nav.css
       only puts the original dark-page colours back (white text, white
       active pill) for this dark page. The radio itself is unchanged.
+
+      2026-10-08 — in that navbar, the GooeyNav "Songs | My Sounds | FM"
+      bar was replaced by the A / H / X letter control
+      (../css/music-letter-nav.css + ../js/music/letter-nav.js, shared with
+      music.html and M2). Home is unchanged. Menu, in alphabetical order:
+      My Sounds, Radio (this page), Songs (opens ../m2.html). What each one
+      does is unchanged and still lives in js/radio-nav.js. The radio
+      itself is not touched.
+
+      2026-10-08 (later) — same two navigations as M2, replacing the centred
+      letter menu and the "← Home" pill:
+        top-left   the portfolio's global A / H / X control (AB2's markup,
+                   AB2's script ../js/ab2/nav.js, ../css/m2-site-nav.css);
+        top-centre the Music section tabs again: the original GooeyNav
+                   (../js/music/gooey-nav.js + js/radio-nav.js +
+                   ../css/m2-nav.css), labels Songs / My Music / Radio,
+                   Radio active; Songs opens ../m2.html.
+      css/radio-nav.css gives both their dark-page colours. This supersedes
+      the 2026-10-08 note above. The radio itself is not touched.
     -->
   </head>
   <body>
     <header class="mus-topbar">
-      <a class="mus-topbar__home" href="../index.html" aria-label="Return to portfolio home">&larr; Home</a>
+      <nav class="ab2-nav" id="ab2-nav" aria-label="Site navigation">
+        <button class="ab2-nav__btn" type="button" id="ab2-nav-btn"
+                aria-label="Open navigation" aria-expanded="false" aria-controls="ab2-nav-menu">
+          <span class="ab2-nav__glyph" aria-hidden="true">
+            <span class="ab2-nav__bar ab2-nav__bar--l"></span>
+            <span class="ab2-nav__bar ab2-nav__bar--r"></span>
+            <span class="ab2-nav__bar ab2-nav__bar--c"></span>
+          </span>
+        </button>
+        <ul class="ab2-nav__menu" id="ab2-nav-menu">
+          <li><a class="ab2-nav__item" href="../index.html">Home</a></li>
+          <li><a class="ab2-nav__item" href="../infinite-gallery.html">Gallery</a></li>
+          <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Projects</span></li>
+          <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Resume</span></li>
+          <li><span class="ab2-nav__item ab2-nav__item--off" aria-disabled="true">Switch</span></li>
+        </ul>
+      </nav>
       <div class="gooey-nav-container mus-topbar__nav" id="musicNav" role="tablist" aria-label="Music navigation sections"></div>
     </header>
     <div id="root"></div>
     <script src="js/radio.js" defer></script>
     <script src="../js/music/gooey-nav.js" defer></script>
     <script src="js/radio-nav.js" defer></script>
+    <script src="../js/ab2/nav.js" defer></script>
   </body>
 </html>

@@ -38,3 +38,12 @@
 .gooey-nav-container .effect.filter {
   mix-blend-mode: lighten;
 }
+
+/* 2026-10-08 — the global A / H / X control (../../css/m2-site-nav.css) is
+   set up there for M2's light page. Same idea as above: this dark page
+   only gets the colours turned round — white letter and labels, and the
+   page's own near-black behind the open menu. */
+.mus-topbar > .ab2-nav {
+  --ab2-ink: #ffffff;
+  --ab2-paper: #030404;
+}
