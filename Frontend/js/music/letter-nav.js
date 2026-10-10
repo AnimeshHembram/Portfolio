@@ -49,6 +49,7 @@
         el.classList.toggle("is-current", on);
         if (el.getAttribute("role") === "tab") {
           el.setAttribute("aria-selected", on ? "true" : "false");
+          el.tabIndex = on ? 0 : -1;
         } else if (on) {
           el.setAttribute("aria-current", "true");
         } else {
@@ -75,6 +76,33 @@
     btn.addEventListener("blur", function () { nav.classList.remove("is-rested"); });
 
     items.forEach(function (el) {
+      el.addEventListener("keydown", function (e) {
+        if (el.getAttribute("role") !== "tab") return;
+
+        var position = items.indexOf(el);
+        var nextPosition;
+
+        switch (e.key) {
+          case "ArrowRight":
+            nextPosition = (position + 1) % items.length;
+            break;
+          case "ArrowLeft":
+            nextPosition = (position - 1 + items.length) % items.length;
+            break;
+          case "Home":
+            nextPosition = 0;
+            break;
+          case "End":
+            nextPosition = items.length - 1;
+            break;
+          default:
+            return;
+        }
+
+        e.preventDefault();
+        items[nextPosition].focus();
+      });
+
       el.addEventListener("click", function () {
         var index = indexOf(el);
         // Close first and hand focus back to the control (the item is about
