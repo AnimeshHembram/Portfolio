@@ -1,0 +1,210 @@
+/* =====================================================================
+   Music navigation control — A (rest) → H (hover) → X (open)
+   =====================================================================
+   Shared by music.html, m2.html and Radio/radio.html. It replaces the
+   "Songs | My Sounds | FM" GooeyNav in the centre of the top bar.
+   Driven by js/music/letter-nav.js.
+
+   Visual reference: the AB2 About page's control (css/ab2.css,
+   "AB2 navigation control"). Same three-bar letter, same proportions,
+   same timings; ported here under its own .mus-lnav* class names so
+   AB2's stylesheet is not loaded or touched.
+
+   Nothing in css/music.css, css/m2-nav.css or Radio/css/radio-nav.css
+   had to change:
+     - Position: the <nav> keeps id="musicNav", so each page's existing
+       "#musicNav" rule still centres it in the header.
+     - Colour: taken from the variables those files already define, so
+       it is light on the dark pages (Music, Radio) and dark on M2.
+   The old .gooey-nav-container rules in those files are now unused.
+
+   The letter is three bars inside a clipped box:
+     A  stems lean together, crossbar low and short
+     H  stems upright, crossbar centred
+     X  stems cross, crossbar collapses
+   ===================================================================== */
+
+/* Inter 800 for the menu labels (M2 and Radio only bundle 400/600).
+   Latin subset, @fontsource/inter 5.3.0, SIL OFL 1.1 — licence text is
+   assets/music/m2/fonts/OFL-Inter.txt, next to the other Inter files. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../assets/music/m2/fonts/inter-800.woff2") format("woff2");
+}
+
+.mus-lnav {
+  /* M2 / Radio define --m2-nav-*; the Music page defines --mus-*. */
+  --lnav-ink: var(--m2-nav-text, var(--mus-paper, #ffffff));
+  --lnav-panel: var(--m2-nav-backdrop, var(--mus-ink, #1c1c1c));
+  --lnav-accent: var(--mus-red, #fd453a);
+  --g: 1.5rem;                             /* letter height */
+  --btn: 44px;                             /* touch target */
+  --nav-ease: cubic-bezier(0.65, 0, 0.2, 1);
+  z-index: 5;                              /* above the page content below the bar */
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.mus-lnav,
+.mus-lnav * { box-sizing: border-box; }
+
+.mus-lnav__btn {
+  display: grid;
+  place-items: center;
+  width: var(--btn);
+  height: var(--btn);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: var(--lnav-ink);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mus-lnav__btn:focus-visible {
+  outline: 2px solid var(--lnav-accent);
+  outline-offset: 3px;
+}
+
+.mus-lnav__glyph {
+  position: relative;
+  display: block;
+  width: calc(var(--g) * 0.9);
+  height: var(--g);
+  overflow: hidden;                        /* trims the bars to flat tops and feet */
+}
+
+.mus-lnav__bar {
+  position: absolute;
+  background: currentColor;
+  transition: transform 0.45s var(--nav-ease), opacity 0.3s ease;
+  will-change: transform;
+}
+
+/* Stems: longer than the box so they still fill it when tilted. */
+.mus-lnav__bar--l,
+.mus-lnav__bar--r {
+  top: calc(var(--g) * -0.3);
+  width: calc(var(--g) * 0.19);
+  height: calc(var(--g) * 1.6);
+}
+.mus-lnav__bar--l { left: 0; }
+.mus-lnav__bar--r { right: 0; }
+
+.mus-lnav__bar--c {
+  left: calc(var(--g) * 0.05);
+  top: calc(var(--g) * 0.415);
+  width: calc(var(--g) * 0.8);
+  height: calc(var(--g) * 0.17);
+}
+
+/* A — the resting letter */
+.mus-lnav__bar--l { transform: translateX(calc(var(--g) * 0.18)) rotate(19.26deg); }
+.mus-lnav__bar--r { transform: translateX(calc(var(--g) * -0.18)) rotate(-19.26deg); }
+.mus-lnav__bar--c { transform: translateY(calc(var(--g) * 0.2)) scaleX(0.61); }
+
+/* H — hover / keyboard focus, on devices that can hover. Skipped on touch.
+   .is-rested holds the A after closing until the pointer or focus leaves. */
+@media (hover: hover) and (pointer: fine) {
+  .mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:hover .mus-lnav__bar--l,
+  .mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:hover .mus-lnav__bar--r,
+  .mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:hover .mus-lnav__bar--c { transform: none; }
+}
+.mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:focus-visible .mus-lnav__bar--l,
+.mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:focus-visible .mus-lnav__bar--r,
+.mus-lnav:not(.is-open):not(.is-rested) .mus-lnav__btn:focus-visible .mus-lnav__bar--c { transform: none; }
+
+/* X — menu open */
+.mus-lnav.is-open .mus-lnav__bar--l { transform: translateX(calc(var(--g) * 0.355)) rotate(33.85deg); }
+.mus-lnav.is-open .mus-lnav__bar--r { transform: translateX(calc(var(--g) * -0.355)) rotate(-33.85deg); }
+.mus-lnav.is-open .mus-lnav__bar--c { transform: scaleX(0); opacity: 0; }
+
+/* ---------- Menu: centred under the letter ---------- */
+
+.mus-lnav__menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin: 0;
+  padding: 0.5rem 1.5rem 0.85rem;
+  list-style: none;
+  text-align: center;
+  white-space: nowrap;
+  /* A light frosted backing in the page's own colour, so the labels stay
+     readable where the menu crosses the player / turntable / radio. */
+  background: var(--lnav-panel);
+  background: color-mix(in srgb, var(--lnav-panel) 78%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.mus-lnav__menu > li {
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(-0.4em);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.mus-lnav__item {
+  display: inline-block;
+  margin: 0;
+  padding: 0.14em 0.1em;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  text-transform: none;
+  color: var(--lnav-ink);
+  transition: color 0.2s ease, transform 0.3s var(--nav-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mus-lnav__item:hover,
+.mus-lnav__item:focus-visible { color: var(--lnav-accent); }
+.mus-lnav__item:focus-visible {
+  outline: 2px solid var(--lnav-accent);
+  outline-offset: 2px;
+}
+
+/* The section you are on */
+.mus-lnav__item.is-current { color: var(--lnav-accent); }
+
+.mus-lnav.is-open .mus-lnav__menu {
+  visibility: visible;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 0.25s ease, visibility 0s;
+}
+.mus-lnav.is-open .mus-lnav__menu > li {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.4s ease, transform 0.45s var(--nav-ease);
+}
+.mus-lnav.is-open .mus-lnav__menu > li:nth-child(1) { transition-delay: 0.06s; }
+.mus-lnav.is-open .mus-lnav__menu > li:nth-child(2) { transition-delay: 0.10s; }
+.mus-lnav.is-open .mus-lnav__menu > li:nth-child(3) { transition-delay: 0.14s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mus-lnav__bar,
+  .mus-lnav__item,
+  .mus-lnav__menu,
+  .mus-lnav__menu > li,
+  .mus-lnav.is-open .mus-lnav__menu,
+  .mus-lnav.is-open .mus-lnav__menu > li { transition: none; }
+  .mus-lnav__menu > li { transform: none; }
+}
