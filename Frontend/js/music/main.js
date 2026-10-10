@@ -11,7 +11,7 @@
 // Plain classic script (no import/export) — see gooey-nav.js for why.
 document.addEventListener("DOMContentLoaded", function () {
   var navContainer = document.getElementById("musicNav");
-  if (!navContainer || !window.Music || !window.Music.createGooeyNav) return;
+  if (!navContainer || !window.Music || !window.Music.createLetterNav) return;
 
   var panels = [
     document.getElementById("panel-songs"),
@@ -29,28 +29,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   showPanel(0);
 
-  window.Music.createGooeyNav({
+  // 2026-10-08: the GooeyNav bar was replaced by the A / H / X letter
+  // control (js/music/letter-nav.js). It reports the chosen section through
+  // the same onChange(index) as before — index is still 0 Songs, 1 My
+  // Sounds, 2 FM ("Radio" in the menu) — so showPanel() is unchanged. The
+  // tab ids (tab-songs / tab-my-sounds / tab-fm) the panels point at with
+  // aria-labelledby are now written directly in music.html.
+  window.Music.createLetterNav({
     container: navContainer,
-    items: [{ label: "Songs" }, { label: "My Sounds" }, { label: "FM" }],
-    particleCount: 15,
-    particleDistances: [90, 10],
-    particleR: 100,
     initialActiveIndex: 0,
-    animationTime: 600,
-    timeVariance: 300,
-    colors: [1, 2, 3, 1, 2, 3, 1, 4],
     onChange: function (index) {
       showPanel(index);
     },
-  });
-
-  // Give each <li><a> a stable id matching its panel's aria-labelledby,
-  // for screen readers — done here rather than inside gooey-nav.js so
-  // the nav module stays generic/reusable and doesn't need to know
-  // about "tab-songs" etc.
-  var links = navContainer.querySelectorAll("nav ul li a");
-  links.forEach(function (a, i) {
-    if (tabs[i]) a.id = tabs[i];
   });
 
   // ---- Songs: player ------------------------------------------------------

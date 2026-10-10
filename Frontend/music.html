@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/music.css" />
+<link rel="stylesheet" href="css/music-letter-nav.css" />
 <!--
   Music — PHASE 1: frontend only.
 
@@ -44,7 +45,25 @@
 
   <header class="mus-topbar">
    <a class="mus-topbar__home" href="index.html" aria-label="Return to portfolio home">&larr; Home</a>
-    <div class="gooey-nav-container mus-topbar__nav" id="musicNav" role="tablist" aria-label="Music navigation sections"></div>
+    <!-- 2026-10-08: the GooeyNav "Songs | My Sounds | FM" bar was replaced by
+         the A / H / X letter control (css/music-letter-nav.css,
+         js/music/letter-nav.js). Shown alphabetically; "Radio" is the FM
+         section. data-index is the panel number js/music/main.js already
+         uses (0 Songs, 1 My Sounds, 2 FM), so the switching is unchanged. -->
+    <nav class="mus-topbar__nav mus-lnav" id="musicNav" aria-label="Music sections">
+      <button class="mus-lnav__btn" type="button" id="musicNavBtn" aria-label="Open music navigation" aria-expanded="false" aria-controls="musicNavMenu">
+        <span class="mus-lnav__glyph" aria-hidden="true">
+          <span class="mus-lnav__bar mus-lnav__bar--l"></span>
+          <span class="mus-lnav__bar mus-lnav__bar--r"></span>
+          <span class="mus-lnav__bar mus-lnav__bar--c"></span>
+        </span>
+      </button>
+      <ul class="mus-lnav__menu" id="musicNavMenu" role="tablist" aria-label="Music navigation sections">
+        <li role="presentation"><button type="button" class="mus-lnav__item" role="tab" id="tab-my-sounds" data-index="1" aria-controls="panel-my-sounds" aria-selected="false">My Sounds</button></li>
+        <li role="presentation"><button type="button" class="mus-lnav__item" role="tab" id="tab-fm" data-index="2" aria-controls="panel-fm" aria-selected="false">Radio</button></li>
+        <li role="presentation"><button type="button" class="mus-lnav__item" role="tab" id="tab-songs" data-index="0" aria-controls="panel-songs" aria-selected="true">Songs</button></li>
+      </ul>
+    </nav>
   </header>
   <main class="mus-main">
     <div class="mus-panels">
@@ -153,7 +172,7 @@
     </div>
   </main>
 
-  <script src="js/music/gooey-nav.js" defer></script>
+  <script src="js/music/letter-nav.js" defer></script>
   <script src="js/music/songs-player.js" defer></script>
   <script src="js/music/main.js" defer></script>
 </body>
