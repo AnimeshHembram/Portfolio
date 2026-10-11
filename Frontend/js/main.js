@@ -64,6 +64,12 @@
       spot.addEventListener("click", function () {
         window.location.href = href;
       });
+      spot.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          window.location.href = href;
+        }
+      });
     }
   });
 })();
