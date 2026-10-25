@@ -8,7 +8,7 @@ Confirmed by direct inspection, not assumed:
 - No build step, no bundler, no transpiler.
 - No package manager — `package.json` and `node_modules` are absent from the entire repository.
 - One external dependency loaded via CDN, animate.css (via cdnjs), plus Google Fonts on about.html.
-- **One server-side piece:** a single Cloudflare Pages Function, `functions/api/resume-event.js` (§10). It is plain JavaScript with no dependencies and no build step; Cloudflare compiles it at deploy time. The static site itself is unchanged by it.
+- No server-side code: there is no `functions/` directory, so Cloudflare Pages serves the site as purely static files.
 
 This stack is a hard constraint (PRD §8) and is preserved through every phase in Phases.md.
 
@@ -57,7 +57,7 @@ These are not currently reconciled. Design.md documents both as the current lang
 ## 7. Deployment
 
 - **Host: Cloudflare Pages** (project `animesh-portfolio-bci`, live at https://animesh-portfolio-bci.pages.dev/), connected to the `AnimeshHembram/Portfolio` GitHub repository. Pushing to `main` triggers a production deployment; other branches get preview deployments.
-- **Build settings:** no build command; **build output directory `Frontend`**; root directory = repository root. So `Frontend/index.html` is served at `/`, and **Pages Functions live in `functions/` at the repository root** (not inside `Frontend/`).
+- **Build settings:** no build command; **build output directory `Frontend`**; root directory = repository root. So `Frontend/index.html` is served at `/`, and `Frontend/assets/…` at `/assets/…`. (If server code is ever added, Pages Functions would go in `functions/` at the repository root, not inside `Frontend/`.)
 - Cloudflare Pages serves `*.html` at extensionless URLs (`/day.html` → 308 → `/day`), and with no `404.html` present unknown paths fall back to `index.html` with status 200 — so a mistyped asset path returns HTML, not a 404. Verify asset content types after deploys, not just status codes.
 - The case-sensitivity risk in §3 still applies (Cloudflare's filesystem is case-sensitive too).
 - Earlier versions of this document said GitHub Pages; that is no longer the host.
@@ -79,48 +79,19 @@ Planned future systems and where they attach:
 - **Time-based wallpaper switching** extends the existing hour-check script in `index.html`; wallpaper assets already exist in `assets/wallpapers/` (4am, 5am, 6am, 9am variants), suggesting the original intent was more granular than the current binary day/night split.
 - **Morning aurora overlay** (`js/aurora.js`, built out of sequence — see Phases.md Phase 5): a first example of this pattern. A dedicated script file, loaded via its own `<script defer>` tag rather than folded into `index.html`'s inline script, owns a `<canvas>` layered inside `.desktop--day` and toggles it on a schedule using the same boundary-timeout technique as the day/night switch. This is the template for any future sub-window effect: own script file, own scheduling loop mirroring §4's pattern, transparent canvas background so it only adds to what's beneath it, and a `?fx=`-style override for testing.
 
-## 10. Resume View/Download + Email Notifications
+## 10. Resume View/Download Popover
 
-**What it does.** The dock's Resume icon (`#resumeDockSlot`, on `index.html`, `day.html`, `night.html`) opens a small glass popover (`#resumePopover`) with **View Resume** (opens the PDF in a new tab) and **Download Resume** (downloads it as `Animesh_Hembram_Resume.pdf`). Each click also sends a best-effort event to `/api/resume-event`, which may email the site owner via Resend.
+**What it does.** The dock's Resume icon (`#resumeDockSlot`, on `index.html`, `day.html`, `night.html`) opens a small glass popover (`#resumePopover`) with **View Resume** (opens the PDF in a new tab) and **Download Resume** (downloads it as `Animesh_Hembram_Resume.pdf`). Entirely static — no tracking, analytics, backend or email.
 
 **Files.**
-- `Frontend/assets/resume/animesh-hembram-resume.pdf` — the approved resume (lowercase-hyphen filename per Rules.md §7; the `download` attribute supplies the recruiter-facing name). To update the resume, replace this file keeping the same name.
-- Markup: the Resume slot is a real `<a href="…pdf" target="_blank">`, so it still opens the PDF with JavaScript disabled. The popover markup sits inside `.dock-wrapper`, after `.dock`.
-- `Frontend/js/dock.js` — final IIFE: popover open/close (click, Enter/Space, Escape, click-outside, routed Tab order, arrow keys), viewport-clamped positioning, and click tracking.
-- `Frontend/css/style.css` — "Resume popover" section; reuses the `--dock-glass-*` tokens plus new `--resume-pop-*` tokens, so day and night render identically, like the dock.
-- `functions/api/resume-event.js` — the Pages Function. `scripts/test-resume-event.mjs` — its tests.
-
-**Request flow.**
-1. Visitor clicks View/Download. The browser follows the link normally — tracking never calls `preventDefault`, so the PDF never depends on the endpoint.
-2. In parallel, `dock.js` POSTs `{"type":"view"|"download","page":location.pathname}` as JSON (`fetch` with `keepalive`, `sendBeacon` fallback), at most once per type per tab session (`sessionStorage`).
-3. The Function validates, answers immediately, and does the notification work in `waitUntil`.
-
-**Function routing & validation.** `functions/api/resume-event.js` exports `onRequest` → route `/api/resume-event`. Only routes under `functions/` invoke the Function; all static assets stay plain static requests. Checks, in order: method must be POST (else 405 + `Allow: POST`); `Origin` must exactly match one of `ALLOWED_ORIGIN` and `Sec-Fetch-Site`, if present, must be `same-origin` (else 403); `Content-Type: application/json` (else 415); body ≤ 1 KB, enforced while streaming (else 413); JSON object with only `type` ∈ {view, download} and `page` ∈ {`/`, `/index`, `/index.html`, `/day`, `/day.html`, `/night`, `/night.html`} (else 400). Every response body is just `{"ok":true}` or `{"ok":false}` with `Cache-Control: no-store`. The recipient, sender and subject are fixed server-side; nothing in the request can choose them.
-
-**Cloudflare configuration (dashboard — never in source).**
-| Name | Kind | Value |
-|---|---|---|
-| `RESEND_API_KEY` | Secret (encrypted) | Resend API key, *Sending access* only |
-| `NOTIFY_EMAIL` | Secret (encrypted) | the Resend account's own email address |
-| `ALLOWED_ORIGIN` | Plaintext variable | `https://animesh-portfolio-bci.pages.dev` (comma-separate extra origins, e.g. a preview URL) |
-| `RESUME_EVENTS` | KV namespace binding | a KV namespace, e.g. `portfolio-resume-events` |
-Set them for **Production** (and Preview, if previews should notify). Changes apply to the **next** deployment.
-
-**Resend.** Free plan: 100 emails/day, 3,000/month. Sender is `Portfolio Alerts <onboarding@resend.dev>`; Resend only lets that test sender deliver to the **email address that owns the Resend account**, so `NOTIFY_EMAIL` must be that address (to use any other recipient, verify a domain you own in Resend and change `FROM_ADDRESS`). Each send carries an `Idempotency-Key` of the event ID. A send counts as delivered-to-provider (`outcome: "sent"`) only when Resend returns 2xx with a message `id`.
-
-**Rate limiting & dedupe (KV, approximate).** Per UTC hour ≤ 10 emails, per UTC day ≤ 40 (both event types combined), plus a 60-second per-type dedupe window. Counters are reserved *before* sending so failures still count (the limiter errs toward fewer emails). KV is eventually consistent, so simultaneous clicks in different Cloudflare locations can briefly exceed a cap. If the `RESUME_EVENTS` binding is missing or KV errors, the Function **fails closed** and sends nothing.
-
-**Logs.** One JSON line per accepted event in Pages → Deployment → Functions real-time logs: `{"fn":"resume-event","event_id","type","outcome",…}` where outcome ∈ `sent` | `deduped` | `rate_limited` | `config_missing` | `kv_unavailable` | `kv_error` | `provider_rejected` (with HTTP status) | `provider_unconfirmed` | `provider_timeout` (5 s) | `provider_unreachable`. API keys, the recipient address and provider response bodies are never logged.
-
-**Privacy.** No IP addresses, user agents, cookies, referrers, fingerprints or visitor identifiers are read, stored, logged or emailed. Emails contain only: event type, UTC timestamp, page, random event ID, and a note that a click is not proof the PDF was saved, opened or read.
+- `Frontend/assets/AnimeshHembramResume 5B.pdf` — the single source of truth for the resume. Because the filename contains a space, every link uses the URL-encoded relative path `assets/AnimeshHembramResume%205B.pdf` (served at `/assets/AnimeshHembramResume%205B.pdf`). Filenames are case-sensitive on Cloudflare (§3), so links must match this exact casing. To update the resume, replace this file keeping the same name — no code change needed.
+- Markup (identical on all three pages): the Resume slot is a real `<a href="assets/AnimeshHembramResume%205B.pdf" target="_blank" rel="noopener">`, so it still opens the PDF with JavaScript disabled. The popover markup sits inside `.dock-wrapper`, after `.dock`, holding two `.resume-popover__action` links: View (`target="_blank" rel="noopener"`) and Download (`download="Animesh_Hembram_Resume.pdf"`).
+- `Frontend/js/dock.js` — final IIFE: popover open/close only (click, Enter/Space/arrow keys, Escape returns focus to the icon, click-outside, Tab order routed as if the popover followed the icon, viewport-clamped positioning). It never calls `preventDefault` on the two actions, so the browser handles opening/downloading natively.
+- `Frontend/css/style.css` — "Resume popover" section; reuses the `--dock-glass-*` tokens plus `--resume-pop-*` tokens, so day and night render identically, like the dock. Night mode's hidden dock stays revealed while the popover is open (it is focus-within/hover-within the dock hover zone).
 
 **Known limitations.**
-- Opening the PDF URL directly, from browser cache, a search engine or a shared link produces no event.
-- Ad/tracker blockers, offline clicks, browser quirks and Pages Functions/Resend/KV free-tier limits can drop events; not every click produces an email, and one person can produce more than one (new tab session after the 60 s dedupe window).
-- Some mobile browsers (notably iOS Safari) open the PDF instead of saving it even from Download; it is still logged as a download request.
+- Some mobile browsers (notably iOS Safari) open the PDF instead of saving it even from Download; the `download` filename hint only applies where the browser honours it (same-origin, which this is).
 - The PDF is public, including the contact details printed in it.
+- With no `404.html`, Cloudflare Pages returns `index.html` (status 200) for a mistyped path — after renaming or moving the PDF, check that the link returns `application/pdf`, not HTML.
 
-**Local testing.**
-- Unit tests (no dependencies): `node --test scripts/test-resume-event.mjs` from the repo root.
-- JS syntax: `node scripts/check-js.mjs`.
-- Full local Pages run (Functions + static), without adding package files: `npx wrangler pages dev Frontend --kv RESUME_EVENTS --binding ALLOWED_ORIGIN=http://localhost:8788 --binding RESEND_API_KEY=<key> --binding NOTIFY_EMAIL=<your Resend email>` then open http://localhost:8788. Alternatively put the two secrets in a `.dev.vars` file (git-ignored). Wrangler's `.wrangler/` cache is git-ignored.
+**Testing.** `node scripts/check-js.mjs` for syntax; then on each of `/`, `/day`, `/night` (and `/?mode=day`, `/?mode=night`): View opens the PDF in a new tab, Download saves `Animesh_Hembram_Resume.pdf`, Escape/outside-click close the popover, and the other dock icons still work.

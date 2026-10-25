@@ -11,13 +11,3 @@ excluding vendored Three.js files. It reports each file's result
 and exits with a non-zero status if a syntax check fails.
 
 Run this check after editing portfolio JavaScript.
-
-# Resume Event Function Tests
-
-Tests for the `/api/resume-event` Cloudflare Pages Function
-(`functions/api/resume-event.js`). Uses Node's built-in test runner
-only — nothing to install. Run from the repository root:
-
-```powershell
-node --test scripts/test-resume-event.mjs
-```

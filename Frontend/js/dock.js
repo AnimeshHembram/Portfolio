@@ -384,23 +384,21 @@
 })();
 
 // ---------------------------------------------------------------------
-// "Resume" dock icon — View / Download popover + click tracking
+// "Resume" dock icon — View / Download popover
 // ---------------------------------------------------------------------
 // Same isolated-IIFE pattern as the blocks above. The Resume slot is a
 // real <a href="…pdf"> in the markup, so without JavaScript it simply
 // opens the PDF; here it is upgraded to a disclosure button that opens
-// #resumePopover. The popover's two actions are plain links too — the
-// tracking call below runs alongside the browser's default action and
-// never blocks or replaces it, so the PDF opens/downloads even when the
-// endpoint, the network, or the email provider fails.
+// #resumePopover. The popover's two actions are plain links to the
+// static PDF (View opens it in a new tab, Download uses the `download`
+// attribute) — this script only opens and closes the popover.
 (function () {
   var slot = document.getElementById("resumeDockSlot");
   var popover = document.getElementById("resumePopover");
   if (!slot || !popover) return;
 
-  var EVENT_ENDPOINT = "/api/resume-event";
   var actions = Array.prototype.slice.call(
-    popover.querySelectorAll("[data-resume-event]")
+    popover.querySelectorAll(".resume-popover__action")
   );
 
   slot.setAttribute("role", "button");
@@ -527,60 +525,10 @@
     if (isOpen()) position();
   });
 
-  // --- Click tracking -------------------------------------------------
-  // Fire-and-forget POST to the Pages Function. Only the event type and
-  // this page's path are sent — nothing that identifies the visitor.
-  // One notification attempt per event type per tab session, to avoid
-  // repeat clicks generating repeat emails (the server also rate-limits).
-  function alreadySent(type) {
-    try {
-      return window.sessionStorage.getItem("resume-event:" + type) === "1";
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function markSent(type) {
-    try {
-      window.sessionStorage.setItem("resume-event:" + type, "1");
-    } catch (err) {
-      /* storage unavailable — the server-side limits still apply */
-    }
-  }
-
-  function track(type) {
-    if (alreadySent(type)) return;
-    markSent(type);
-    var body = JSON.stringify({ type: type, page: window.location.pathname });
-    try {
-      if (window.fetch) {
-        window
-          .fetch(EVENT_ENDPOINT, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: body,
-            keepalive: true,
-            credentials: "same-origin",
-          })
-          .catch(function () {
-            /* tracking is best-effort; the link has already done its job */
-          });
-      } else if (navigator.sendBeacon) {
-        navigator.sendBeacon(
-          EVENT_ENDPOINT,
-          new Blob([body], { type: "application/json" })
-        );
-      }
-    } catch (err) {
-      /* never let tracking interfere with opening the resume */
-    }
-  }
-
   actions.forEach(function (link) {
     link.addEventListener("click", function () {
-      var type = link.getAttribute("data-resume-event");
-      if (type === "view" || type === "download") track(type);
-      // No preventDefault — the browser opens/downloads the PDF as usual.
+      // No preventDefault — the browser opens/downloads the PDF as usual;
+      // just close the popover once the click has gone through.
       window.setTimeout(function () {
         close(false);
       }, 0);
