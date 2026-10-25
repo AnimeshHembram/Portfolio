@@ -81,6 +81,13 @@
     var originalPlay = proto.play;
     var wrappedPlay = function () {
       remember(this);
+      // Lets js/background-music.js step aside when a page's own player
+      // starts, including players that never enter the DOM.
+      try {
+        document.dispatchEvent(new CustomEvent("portfolio:mediaplay", { detail: this }));
+      } catch (err) {
+        /* never block playback */
+      }
       return originalPlay.apply(this, arguments);
     };
     wrappedPlay.__portfolioShortcuts = true;
@@ -131,6 +138,10 @@
     applyMute();
     toast(muted ? "Sound muted" : "Sound on", muted ? "muted" : "sound");
   }
+
+  // Shared with js/background-music.js so its mute button and the M key
+  // are one switch.
+  window.PortfolioShortcuts = { toggleMute: toggleMute };
 
   // --- Fullscreen -----------------------------------------------------
   function fullscreenElement() {
