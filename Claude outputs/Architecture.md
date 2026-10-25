@@ -95,3 +95,22 @@ Planned future systems and where they attach:
 - With no `404.html`, Cloudflare Pages returns `index.html` (status 200) for a mistyped path — after renaming or moving the PDF, check that the link returns `application/pdf`, not HTML.
 
 **Testing.** `node scripts/check-js.mjs` for syntax; then on each of `/`, `/day`, `/night` (and `/?mode=day`, `/?mode=night`): View opens the PDF in a new tab, Download saves `Animesh_Hembram_Resume.pdf`, Escape/outside-click close the popover, and the other dock icons still work.
+
+## 11. Global Keyboard Shortcuts
+
+**Keys.** `F` toggles fullscreen · `M` mutes/unmutes the page's audio · `Backspace` goes back one page. Implemented once in `Frontend/js/shortcuts.js` (plain classic `<script defer>`, no dependencies) and loaded on every linked page: `index.html`, `day.html`, `night.html`, `ab2.html`, `infinite-gallery.html`, `m2.html`, `music.html`, `Radio/radio.html` (as `../js/shortcuts.js`). Not loaded on the unlinked backups `about.html` / `aboutme.html`. A `window.__portfolioShortcuts` guard guarantees one window-level `keydown` listener per page even if the file is included twice.
+
+**Guards.** Ignored while typing (`input` text types, `textarea`, `select`, contenteditable, `role=textbox/searchbox/combobox`, including focus inside shadow roots via `composedPath()`), with Ctrl/Cmd/Alt/Shift held, during IME composition, on key auto-repeat (F/M), and when an earlier handler already called `preventDefault()`. Backspace is stricter: it also does nothing while any form control, button or ARIA widget has focus (e.g. the M2 volume slider, the Radio knob, a focused dock icon) — click empty space or arrive on a fresh page and it works. It only calls `history.back()` when there is a previous page in this tab (`navigation.canGoBack`, falling back to `history.length > 1`). No existing handler uses F/M/Backspace; the gallery's WASDQE/arrow keys, Escape menus and dock keys pass through untouched.
+
+**Fullscreen.** `document.documentElement.requestFullscreen()` (plus Safari's `webkit` prefix); F or Esc exits. Where fullscreen isn't allowed (e.g. iPhone Safari, iframes without permission) the toast says so; nothing throws.
+
+**Mute — integrates with each page's own audio, never creates any.**
+- Pages with audio mark their script tag `data-audio` (`m2.html`, `music.html`, `Radio/radio.html`); elsewhere M does nothing.
+- `<audio>`/`<video>` (Music's `#playerAudio`): sets the element's own `muted` — playback position and `volume` untouched.
+- Audio created in code and never put in the DOM (the Radio bundle's `new Audio(url)`): `shortcuts.js` wraps `HTMLMediaElement.prototype.play` once to remember any element that starts playing and give it the current mute state; `play()`'s behaviour/return value is unchanged.
+- `<groove-turntable>` (Web Audio, M2): new `setMuted(bool)` / `muted` on the element and `VinylAudio.setMuted()` in `js/music/m2-turntable.js`; output gain goes to 0 while muted and returns to the slider's level on unmute (the slider keeps working while muted).
+- State persists per tab in `sessionStorage` (`portfolio:muted`) and is re-applied on each audio page after its players are defined; a new tab starts unmuted.
+
+**Toast.** `Frontend/css/shortcuts.css` (loaded by `shortcuts.js` relative to its own URL, so pages need no extra `<link>`): a top-centre macOS-HUD pill (`role="status"`, `aria-live="polite"`, `pointer-events: none`, z-index 9000 — below the custom cursor) showing "Sound muted" / "Sound on" / "Full screen" / "Exited full screen" / "Full screen isn't available here". Tokens are `--shortcut-toast-*`.
+
+**Known limitations.** Backspace intentionally does nothing while a control has focus; Esc-to-exit fullscreen is handled by the browser (no toast); the Radio's real stream couldn't be exercised offline in automated tests (its code-created player pattern was), so verify Radio mute once live.

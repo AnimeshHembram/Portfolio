@@ -1,0 +1,86 @@
+/* ---------------- Keyboard-shortcut toast (js/shortcuts.js) ----------------
+   A small macOS-style HUD pill confirming M (mute) and F (fullscreen).
+   Loaded by js/shortcuts.js itself, so pages don't need an extra <link>.
+   Shares the resume menu's material (dark vibrancy, hairline border,
+   SF-style type) but defines its own tokens because it is loaded on pages
+   that don't include css/style.css. Fixed at the top centre, clear of the
+   dock, above page content and below the custom cursor (z-index 9999).
+   Never takes pointer events. */
+:root {
+  --shortcut-toast-bg: rgba(36, 36, 40, 0.78);
+  --shortcut-toast-border: rgba(255, 255, 255, 0.14);
+  --shortcut-toast-text: rgba(255, 255, 255, 0.94);
+  --shortcut-toast-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    system-ui, sans-serif;
+}
+
+.shortcut-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 14px 8px 12px;
+  border-radius: 999px;
+  background: var(--shortcut-toast-bg);
+  border: 0.5px solid var(--shortcut-toast-border);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  color: var(--shortcut-toast-text);
+  font-family: var(--shortcut-toast-font);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+.shortcut-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.shortcut-toast::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: var(--shortcut-toast-icon) center / contain no-repeat;
+  mask: var(--shortcut-toast-icon) center / contain no-repeat;
+}
+
+.shortcut-toast[data-icon=""]::before {
+  display: none;
+}
+
+.shortcut-toast[data-icon="sound"] {
+  --shortcut-toast-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.5L12 5.5v13l-4.5-4H4z'/%3E%3Cpath d='M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11'/%3E%3C/svg%3E");
+}
+
+.shortcut-toast[data-icon="muted"] {
+  --shortcut-toast-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.5L12 5.5v13l-4.5-4H4z'/%3E%3Cpath d='M16 9.5l5 5M21 9.5l-5 5'/%3E%3C/svg%3E");
+}
+
+.shortcut-toast[data-icon="fullscreen"] {
+  --shortcut-toast-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5'/%3E%3C/svg%3E");
+}
+
+.shortcut-toast[data-icon="fullscreen-off"] {
+  --shortcut-toast-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-toast {
+    transition: opacity 0.2s ease;
+    transform: translate(-50%, 0);
+  }
+}

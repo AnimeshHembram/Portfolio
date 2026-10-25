@@ -88,6 +88,13 @@ class VinylAudio {
     this.timer = 0;
     this.level = 0.72;
     this.speed = 1;
+    this.muted = false; // set by setMuted() (M shortcut, js/shortcuts.js)
+  }
+
+  // Output gain for the current volume, or silence while muted. Muting
+  // never touches `level`, so the volume slider's value survives a mute.
+  targetGain() {
+    return this.muted ? 0 : this.level * this.level * 0.48;
   }
 
   ensureAudio() {
@@ -96,7 +103,7 @@ class VinylAudio {
     if (!AudioContext) throw new Error('Web Audio is unavailable in this browser.');
     this.context = new AudioContext();
     this.output = this.context.createGain();
-    this.output.gain.value = this.level * this.level * 0.48;
+    this.output.gain.value = this.targetGain();
     const compressor = this.context.createDynamicsCompressor();
     compressor.threshold.value = -18;
     compressor.knee.value = 16;
@@ -145,7 +152,14 @@ class VinylAudio {
   setVolume(value) {
     this.level = Math.max(0, Math.min(1, value));
     if (this.output && this.context) {
-      this.output.gain.setTargetAtTime(this.level * this.level * 0.48, this.context.currentTime, 0.025);
+      this.output.gain.setTargetAtTime(this.targetGain(), this.context.currentTime, 0.025);
+    }
+  }
+
+  setMuted(muted) {
+    this.muted = Boolean(muted);
+    if (this.output && this.context) {
+      this.output.gain.setTargetAtTime(this.targetGain(), this.context.currentTime, 0.025);
     }
   }
 
@@ -369,6 +383,15 @@ class GrooveTurntable extends HTMLElement {
 
   get currentTrack() { return TRACKS[this.trackIndex]; }
   get currentTime() { return this.audio.position; }
+
+  // Public mute switch used by the global M shortcut (js/shortcuts.js).
+  setMuted(muted) {
+    this.audio.setMuted(muted);
+  }
+
+  get muted() {
+    return this.audio.muted;
+  }
 
   async togglePlayback() {
     if (this.playing) this.pause();
