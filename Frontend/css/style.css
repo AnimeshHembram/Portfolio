@@ -959,39 +959,64 @@ body {
 }
 
 /* ---------------- Resume popover (dock "Resume" slot) ----------------
-   Opened by js/dock.js from the Resume dock slot. Lives inside
-   .dock-wrapper so it inherits the night-mode hide/reveal (it is
-   focus-within the hover zone while open) and reuses the dock's glass
-   tokens, so day and night render identically — the same way the dock
-   itself does. Horizontal position is set by js/dock.js (--resume-pop-x)
-   to sit above the Resume icon, clamped to the viewport. */
+   Opened by js/dock.js from the Resume dock slot. Styled after a macOS
+   menu (Sonoma/Sequoia): dark vibrancy material, hairline border with a
+   top inner highlight, 12px outer / 6px row radius, SF-style type, line
+   icons on the left, a hairline divider, and the system-blue row
+   highlight on hover/focus. Lives inside .dock-wrapper so it inherits
+   the night-mode hide/reveal (it is focus-/hover-within the hover zone
+   while open); the same look is used in day and night, like the dock.
+   Horizontal position is set by js/dock.js (--resume-pop-x) to sit above
+   the Resume icon, clamped to the viewport. Icons are CSS masks, so no
+   markup or image files are needed and they follow the text colour. */
+@font-face {
+  /* Self-hosted Inter (already in the repo for the music page) — the
+     closest free match to SF Pro, used where SF isn't installed
+     (Windows/Android/Linux). Apple devices use the real SF via
+     -apple-system first. */
+  font-family: "Resume Menu Inter";
+  src: url("../assets/music/m2/fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --resume-pop-text: #fff;
-  --resume-pop-action-bg: rgba(255, 255, 255, 0.08);
-  --resume-pop-action-bg-hover: rgba(255, 255, 255, 0.2);
-  --resume-pop-action-border: rgba(255, 255, 255, 0.16);
-  --resume-pop-focus: rgba(255, 255, 255, 0.85);
-  --resume-pop-radius: 16px;
+  --resume-pop-font: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Resume Menu Inter", "Segoe UI", system-ui, sans-serif;
+  --resume-pop-bg: rgba(36, 36, 40, 0.72);
+  --resume-pop-border: rgba(255, 255, 255, 0.14);
+  --resume-pop-highlight: rgba(255, 255, 255, 0.08);
+  --resume-pop-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6),
+    0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --resume-pop-text: rgba(255, 255, 255, 0.92);
+  --resume-pop-icon: rgba(255, 255, 255, 0.72);
+  --resume-pop-accent: #0a84ff; /* macOS system blue (dark appearance) */
+  --resume-pop-divider: rgba(255, 255, 255, 0.12);
+  --resume-pop-radius: 12px;
+  --resume-pop-row-radius: 6px;
 }
 
 .resume-popover {
   position: absolute;
-  bottom: calc(100% + 14px);
+  bottom: calc(100% + 12px);
   left: var(--resume-pop-x, 0px);
   z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 176px;
-  padding: 8px;
+  min-width: 196px;
+  padding: 5px;
   border-radius: var(--resume-pop-radius);
-  background: var(--dock-glass-fill);
-  border: 1px solid var(--dock-glass-border);
-  backdrop-filter: var(--dock-glass-blur);
-  -webkit-backdrop-filter: var(--dock-glass-blur);
-  box-shadow: var(--dock-glass-shadow);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  animation: resume-pop-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--resume-pop-bg);
+  border: 0.5px solid var(--resume-pop-border);
+  box-shadow: inset 0 0.5px 0 var(--resume-pop-highlight), var(--resume-pop-shadow);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  font-family: var(--resume-pop-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform-origin: bottom center;
+  animation: resume-pop-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 
 .resume-popover[hidden] {
@@ -999,29 +1024,66 @@ body {
 }
 
 .resume-popover__action {
-  display: block;
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: var(--resume-pop-action-bg);
-  border: 1px solid var(--resume-pop-action-border);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 10px 5px 8px;
+  border-radius: var(--resume-pop-row-radius);
   color: var(--resume-pop-text);
   font-size: 13px;
-  line-height: 1.3;
-  font-weight: 500;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.08px;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease;
+  outline: none;
+}
+
+/* Hairline divider between the two rows, inset like a macOS menu separator. */
+.resume-popover__action + .resume-popover__action {
+  position: relative;
+  margin-top: 11px;
+}
+.resume-popover__action + .resume-popover__action::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -6px;
+  height: 1px;
+  background: var(--resume-pop-divider);
+  pointer-events: none;
+}
+
+/* Line icons: eye for View, tray-arrow for Download. */
+.resume-popover__action::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  background-color: var(--resume-pop-icon);
+  -webkit-mask: var(--resume-pop-icon-src) center / contain no-repeat;
+  mask: var(--resume-pop-icon-src) center / contain no-repeat;
+}
+.resume-popover__action[target="_blank"] {
+  --resume-pop-icon-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z'/%3E%3Ccircle cx='12' cy='12' r='3.25'/%3E%3C/svg%3E");
+}
+.resume-popover__action[download] {
+  --resume-pop-icon-src: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5v12M7 11l5 5 5-5'/%3E%3Cpath d='M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
 }
 
 .resume-popover__action:hover,
 .resume-popover__action:focus-visible {
-  background: var(--resume-pop-action-bg-hover);
+  background: var(--resume-pop-accent);
+  color: #fff;
 }
-
-.resume-popover__action:focus-visible {
-  outline: 2px solid var(--resume-pop-focus);
-  outline-offset: 2px;
+.resume-popover__action:hover::before,
+.resume-popover__action:focus-visible::before {
+  background-color: #fff;
+}
+.resume-popover__action:active {
+  background: #0071e3;
 }
 
 /* The slot's own name tooltip would sit on top of the open popover. */
@@ -1032,11 +1094,11 @@ body {
 @keyframes resume-pop-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: scale(0.96) translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -1046,8 +1108,28 @@ body {
   }
 }
 
-@media (max-width: 420px) {
+/* Touch: roomier rows (Apple's 44pt tap-target guidance) — iOS-style
+   menu proportions, same material. */
+@media (hover: none) {
+  .resume-popover {
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 14px;
+  }
   .resume-popover__action {
-    padding: 10px 14px; /* keep a comfortable tap target on phones */
+    padding: 11px 12px;
+    font-size: 15px;
+    line-height: 20px;
+    gap: 11px;
+  }
+  .resume-popover__action::before {
+    width: 18px;
+    height: 18px;
+  }
+  .resume-popover__action + .resume-popover__action {
+    margin-top: 9px;
+  }
+  .resume-popover__action + .resume-popover__action::after {
+    top: -5px;
   }
 }
