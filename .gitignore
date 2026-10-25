@@ -1,0 +1,4 @@
+# Local Cloudflare tooling — never commit
+.wrangler/
+.dev.vars
+.dev.vars.*

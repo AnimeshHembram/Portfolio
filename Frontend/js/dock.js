@@ -382,3 +382,208 @@
     });
   });
 })();
+
+// ---------------------------------------------------------------------
+// "Resume" dock icon — View / Download popover + click tracking
+// ---------------------------------------------------------------------
+// Same isolated-IIFE pattern as the blocks above. The Resume slot is a
+// real <a href="…pdf"> in the markup, so without JavaScript it simply
+// opens the PDF; here it is upgraded to a disclosure button that opens
+// #resumePopover. The popover's two actions are plain links too — the
+// tracking call below runs alongside the browser's default action and
+// never blocks or replaces it, so the PDF opens/downloads even when the
+// endpoint, the network, or the email provider fails.
+(function () {
+  var slot = document.getElementById("resumeDockSlot");
+  var popover = document.getElementById("resumePopover");
+  if (!slot || !popover) return;
+
+  var EVENT_ENDPOINT = "/api/resume-event";
+  var actions = Array.prototype.slice.call(
+    popover.querySelectorAll("[data-resume-event]")
+  );
+
+  slot.setAttribute("role", "button");
+  slot.setAttribute("aria-haspopup", "true");
+  slot.setAttribute("aria-expanded", "false");
+  slot.setAttribute("aria-controls", "resumePopover");
+  slot.setAttribute("aria-label", "Resume");
+
+  function isOpen() {
+    return !popover.hidden;
+  }
+
+  // Place the popover above the Resume icon, kept inside the viewport.
+  // Its containing block is .dock-wrapper (position: fixed + transform).
+  function position() {
+    var wrapper = popover.offsetParent || popover.parentNode;
+    var wrapRect = wrapper.getBoundingClientRect();
+    var slotRect = slot.getBoundingClientRect();
+    var popWidth = popover.offsetWidth;
+    var margin = 8;
+    var left = slotRect.left + slotRect.width / 2 - popWidth / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - popWidth - margin));
+    popover.style.setProperty("--resume-pop-x", left - wrapRect.left + "px");
+  }
+
+  function open(focusFirst) {
+    popover.hidden = false;
+    slot.setAttribute("aria-expanded", "true");
+    position();
+    if (focusFirst && actions[0]) actions[0].focus();
+  }
+
+  function close(returnFocus) {
+    if (!isOpen()) return;
+    popover.hidden = true;
+    slot.setAttribute("aria-expanded", "false");
+    if (returnFocus) slot.focus();
+  }
+
+  slot.addEventListener("click", function (e) {
+    // Let modified clicks (new tab/window, middle-click) open the PDF
+    // directly, the same as the no-JavaScript fallback.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (isOpen()) {
+      close(false);
+    } else {
+      // e.detail === 0 means keyboard activation — move focus into the
+      // popover so its actions are next in the focus order.
+      open(e.detail === 0);
+    }
+  });
+
+  slot.addEventListener("keydown", function (e) {
+    if (e.key === " " || e.key === "Spacebar") {
+      e.preventDefault(); // links don't activate on Space by default
+      if (isOpen()) close(true);
+      else open(true);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      open(true);
+    }
+  });
+
+  // The popover sits after the whole dock in the DOM, so Tab order is
+  // routed by hand to behave as if it were right after the Resume icon:
+  // Shift+Tab from the first action returns to the icon, Tab from the
+  // last action moves on to whatever follows the icon in the dock.
+  function focusAfterSlot() {
+    var all = Array.prototype.slice.call(
+      document.querySelectorAll(
+        'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter(function (el) {
+      return !popover.contains(el) && el.offsetParent !== null;
+    });
+    var next = all[all.indexOf(slot) + 1];
+    if (next) next.focus();
+  }
+
+  popover.addEventListener("keydown", function (e) {
+    var i = actions.indexOf(document.activeElement);
+    if (e.key === "Tab" && i > -1) {
+      if (e.shiftKey && i === 0) {
+        e.preventDefault();
+        close(true);
+      } else if (!e.shiftKey && i === actions.length - 1) {
+        e.preventDefault();
+        close(false);
+        focusAfterSlot();
+      }
+    } else if (e.key === "ArrowDown" && i > -1) {
+      e.preventDefault();
+      actions[(i + 1) % actions.length].focus();
+    } else if (e.key === "ArrowUp" && i > -1) {
+      e.preventDefault();
+      actions[(i - 1 + actions.length) % actions.length].focus();
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Escape" || e.key === "Esc") && isOpen()) {
+      e.preventDefault();
+      close(true);
+    }
+  });
+
+  // Click/tap outside closes it.
+  document.addEventListener("pointerdown", function (e) {
+    if (!isOpen()) return;
+    if (popover.contains(e.target) || slot.contains(e.target)) return;
+    close(false);
+  });
+
+  // Tabbing out of the slot+popover pair closes it.
+  popover.addEventListener("focusout", function (e) {
+    var next = e.relatedTarget;
+    if (next && (popover.contains(next) || next === slot)) return;
+    if (!next) return; // focus left the document (e.g. the new PDF tab)
+    close(false);
+  });
+
+  window.addEventListener("resize", function () {
+    if (isOpen()) position();
+  });
+
+  // --- Click tracking -------------------------------------------------
+  // Fire-and-forget POST to the Pages Function. Only the event type and
+  // this page's path are sent — nothing that identifies the visitor.
+  // One notification attempt per event type per tab session, to avoid
+  // repeat clicks generating repeat emails (the server also rate-limits).
+  function alreadySent(type) {
+    try {
+      return window.sessionStorage.getItem("resume-event:" + type) === "1";
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function markSent(type) {
+    try {
+      window.sessionStorage.setItem("resume-event:" + type, "1");
+    } catch (err) {
+      /* storage unavailable — the server-side limits still apply */
+    }
+  }
+
+  function track(type) {
+    if (alreadySent(type)) return;
+    markSent(type);
+    var body = JSON.stringify({ type: type, page: window.location.pathname });
+    try {
+      if (window.fetch) {
+        window
+          .fetch(EVENT_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: body,
+            keepalive: true,
+            credentials: "same-origin",
+          })
+          .catch(function () {
+            /* tracking is best-effort; the link has already done its job */
+          });
+      } else if (navigator.sendBeacon) {
+        navigator.sendBeacon(
+          EVENT_ENDPOINT,
+          new Blob([body], { type: "application/json" })
+        );
+      }
+    } catch (err) {
+      /* never let tracking interfere with opening the resume */
+    }
+  }
+
+  actions.forEach(function (link) {
+    link.addEventListener("click", function () {
+      var type = link.getAttribute("data-resume-event");
+      if (type === "view" || type === "download") track(type);
+      // No preventDefault — the browser opens/downloads the PDF as usual.
+      window.setTimeout(function () {
+        close(false);
+      }, 0);
+    });
+  });
+})();
