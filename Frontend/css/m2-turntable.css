@@ -512,3 +512,95 @@
   *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; }
   .is-playing .record { animation:none; }
 }
+
+/* ---------------- YouTube mode (groove-turntable[youtube-playlist]) ----------------
+   Only the vinyl graphic is replaced: the record is hidden and an official
+   YouTube IFrame player sits in a "screen" centred on the platter. Rules the
+   player must meet (YouTube Required Minimum Functionality / Developer
+   Policies), which this block is built around:
+     - at least 200 x 200 px, so both sides have a 200px floor;
+     - upright and uncropped: the screen is outside the scaleY()'d platter
+       and the circular record-bed, with no border-radius, mask or clip;
+     - nothing in front of it: z-index 20 puts it above every deck layer,
+       including the tonearm (10) and the deck edge overlay (15); the
+       frame is a box-shadow drawn outside the player, never over it.
+   The platter centre is 41.296cqw from the left (4.966% + 72.66% / 2) and
+   40.203cqw from the top (3.873cqw + 72.66cqw / 2). */
+:host([youtube-playlist]) .record { display: none; }
+
+.yt-screen {
+  --yt-w: max(56.5cqw, 200px);
+  --yt-h: max(31.8cqw, 200px);
+  position: absolute;
+  z-index: 20;
+  left: calc(41.296cqw - var(--yt-w) / 2);
+  top: calc(40.203cqw - var(--yt-h) / 2 + var(--yt-shift, 0px));
+  width: var(--yt-w);
+  height: var(--yt-h);
+  background: #000;
+  box-shadow: 0 0 0 max(2px, .22cqw) #050505, 0 .5cqw 1.6cqw rgba(0, 0, 0, .55);
+}
+.yt-screen iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* If the YouTube API can't load (blocked, offline), show the turntable as it
+   was — the status line says YOUTUBE UNAVAILABLE. */
+.deck.yt-unavailable .yt-screen { display: none; }
+:host([youtube-playlist]) .deck.yt-unavailable .record { display: block; }
+
+/* Opened from disk (file://): js/music/m2-turntable.js never creates the
+   player screen there, so ".yt-unavailable without .yt-screen" is only that
+   local state — on the live site the screen always exists (even if YouTube
+   is blocked), so this label never shows there. The label sits on the
+   centre of the vinyl, inside the record area, well clear of the controls.
+   scaleY counters the platter's .9714 squash so the text isn't flattened. */
+:host([youtube-playlist]) .deck.yt-unavailable:not(:has(.yt-screen)) .record-bed::after {
+  content: "OPEN THE LIVE SITE TO PLAY";
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  max-width: 56%;
+  padding: .55em 1.1em;
+  transform: translate(-50%, -50%) scaleY(1.0294);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 99px;
+  background: rgba(8, 9, 10, .78);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 .3cqw 1.2cqw rgba(0, 0, 0, .55);
+  color: #ededed;
+  font-size: clamp(10px, 1.6cqw, 13px);
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+  pointer-events: none;
+}
+
+/* Phones (< 480px): the 200 x 200 minimum is larger than the gap between
+   the controls, so the deck grows taller and the bottom row (Play,
+   previous/next, time — all positioned from the bottom) moves down. The
+   player is 200 x 200, kept 8px below the speed readout (whose bottom edge
+   is at 11.98cqw + ~16px) and centred on the platter horizontally. The
+   deck height = just enough for that player plus the bottom row (derived
+   from the measured layout: ~0.224 x deck width + 251px), never shorter
+   than the normal proportions. Deck width on phones is 100vw - 32px
+   (css/m2.css: 16px stage padding each side). */
+@media (max-width: 479px) {
+  :host([youtube-playlist]) {
+    aspect-ratio: auto;
+    height: max(calc((100vw - 32px) / 1.2865), calc(0.224 * (100vw - 32px) + 251px));
+  }
+  :host([youtube-playlist]) .yt-screen {
+    --yt-w: 200px;
+    --yt-h: 200px;
+    top: calc(11.98cqw + 25px);
+  }
+}

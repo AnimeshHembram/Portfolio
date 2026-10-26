@@ -36,6 +36,15 @@
   this file changed; geometry and styling live in css/m2-turntable.css.
 
   Independent of music.html, css/music.css and js/music/songs-player.js.
+
+  2026-10-25 (YouTube mode) — when the element has a youtube-playlist
+  attribute, the vinyl graphic is replaced by an official YouTube IFrame
+  API player (class YouTubeAudio below) and the existing controls drive
+  it: play/pause + power, previous/next, volume, seek ring, speed dial
+  (45 = 1.25x), mute (M shortcut). Without the attribute nothing changes:
+  the Web Audio synth (VinylAudio) and the record are used as before.
+  The player is shown upright, unclipped, at least 200x200 px and above
+  every other deck layer, as YouTube's embedding rules require.
 */
 (() => {
 'use strict';
@@ -258,6 +267,258 @@ class VinylAudio {
   }
 }
 
+/*
+  YouTube IFrame Player API adapter. Exposes the same members the element
+  already uses on VinylAudio (play, pause, seek, setVolume, setSpeed,
+  setMuted, position, playing, offset, muted), so the element's controls
+  work unchanged. Playback never starts on its own: the playlist is only
+  cued until the visitor presses Play.
+*/
+const YT_STATE = { UNSTARTED: -1, ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 };
+const YT_SKIP_LIMIT = 5; // stop after this many unplayable videos in a row
+let youTubeApi = null;
+
+function loadYouTubeApi(timeoutMs = 15000) {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (youTubeApi) return youTubeApi;
+  youTubeApi = new Promise((resolve, reject) => {
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previous === 'function') { try { previous(); } catch (error) { /* not ours */ } }
+      resolve(window.YT);
+    };
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    script.onerror = () => reject(new Error('YouTube IFrame API failed to load'));
+    document.head.appendChild(script);
+    window.setTimeout(() => reject(new Error('YouTube IFrame API timed out')), timeoutMs);
+  });
+  return youTubeApi;
+}
+
+const playbackError = (statusText) => Object.assign(new Error(statusText), { statusText });
+
+class YouTubeAudio {
+  constructor(mount, playlistId, hooks) {
+    this.list = playlistId;
+    this.hooks = hooks;
+    this.player = null;
+    this.ready = false;
+    this.failed = false;
+    this.blocked = false;
+    this.state = YT_STATE.UNSTARTED;
+    this.playing = false;
+    this.wantsPlay = false; // true only after the visitor pressed Play (until Pause)
+    this.level = 0.72;
+    this.muted = false;
+    this.speed = 1;
+    this.offset = 0;
+    this.pendingSeek = null;
+    this.errorsInARow = 0;
+    this.videoId = '';
+    this.track = { title: 'YouTube playlist', artist: 'YouTube', length: 0 };
+    this.failMessage = 'YOUTUBE UNAVAILABLE';
+    // YouTube identifies the embedding site from the HTTP Referer; pages
+    // opened from disk (file://) send none, so the player would only show
+    // Error 153. Only load it on real http(s) addresses.
+    if (!/^https?:$/.test(window.location.protocol)) {
+      this.failed = true;
+      this.failMessage = 'OPEN THE LIVE SITE TO PLAY';
+      this.whenReady = Promise.reject(playbackError(this.failMessage));
+      this.whenReady.catch(() => {});
+      return;
+    }
+    this.whenReady = loadYouTubeApi()
+      .then((YT) => new Promise((resolve) => {
+        this.player = new YT.Player(mount, {
+          width: '100%',
+          height: '100%',
+          host: 'https://www.youtube-nocookie.com',
+          playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, iv_load_policy: 3, origin: window.location.origin },
+          events: {
+            onReady: () => {
+              this.ready = true;
+              this.player.setVolume(Math.round(this.level * 100));
+              if (this.muted) this.player.mute(); else this.player.unMute();
+              this.player.setLoop(true); // persists across loads, per the API reference
+              this.player.cuePlaylist({ listType: 'playlist', list: this.list, index: 0 });
+              resolve();
+            },
+            onStateChange: (event) => this.onState(event.data),
+            onError: (event) => this.onError(event.data),
+            onAutoplayBlocked: () => { this.blocked = true; this.hooks.status('PRESS PLAY'); },
+          },
+        });
+      }))
+      .catch((error) => {
+        this.failed = true;
+        this.hooks.unavailable(this.failMessage);
+        throw error;
+      });
+    this.whenReady.catch(() => {});
+  }
+
+  onState(state) {
+    this.state = state;
+    if (state === YT_STATE.PLAYING) {
+      this.errorsInARow = 0;
+      this.blocked = false;
+      this.refreshTrack();
+      this.applySpeed();
+      if (this.pendingSeek !== null) {
+        this.player.seekTo(this.pendingSeek, true);
+        this.pendingSeek = null;
+      }
+      this.setPlaying(true);
+    } else if (state === YT_STATE.PAUSED || state === YT_STATE.ENDED) {
+      this.setPlaying(false);
+    } else if (state === YT_STATE.CUED) {
+      this.refreshTrack();
+      this.setPlaying(false);
+    }
+  }
+
+  onError(code) {
+    this.errorsInARow += 1;
+    if (this.errorsInARow >= YT_SKIP_LIMIT) {
+      this.setPlaying(false);
+      this.hooks.status('PLAYLIST UNAVAILABLE');
+      return;
+    }
+    // 100 = not found / private, 101 and 150 = embedding not allowed, 2/5 = bad or unplayable request.
+    this.hooks.status([100, 101, 150].includes(code) ? 'VIDEO UNAVAILABLE · SKIPPING' : 'PLAYBACK ERROR · SKIPPING');
+    // Only keep playing if the visitor asked for playback; otherwise just
+    // cue the next video, so an error can never start audio on its own.
+    window.setTimeout(() => {
+      if (!this.player) return;
+      if (this.wantsPlay) this.player.nextVideo(); else this.cueNeighbour(1);
+    }, 1200);
+  }
+
+  setPlaying(playing) {
+    if (this.playing === playing) return;
+    this.playing = playing;
+    this.hooks.playing(playing);
+  }
+
+  refreshTrack() {
+    if (!this.player || !this.player.getVideoData) return;
+    const data = this.player.getVideoData() || {};
+    const length = this.player.getDuration() || 0;
+    const changed = data.video_id !== this.videoId;
+    this.videoId = data.video_id || this.videoId;
+    if (data.title) this.track.title = data.title;
+    if (data.author) this.track.artist = data.author.replace(/\s+-\s+Topic$/i, '');
+    if (length) this.track.length = length;
+    if (changed) this.hooks.track();
+  }
+
+  get position() {
+    if (this.pendingSeek !== null) return this.pendingSeek;
+    if (!this.ready) return 0;
+    if (!this.track.length) {
+      const length = this.player.getDuration() || 0;
+      if (length) this.track.length = length;
+    }
+    return this.player.getCurrentTime() || 0;
+  }
+
+  play() {
+    if (this.failed) return Promise.reject(playbackError(this.failMessage));
+    if (!this.ready) return this.whenReady.then(() => this.play(), () => Promise.reject(playbackError(this.failMessage)));
+    this.blocked = false;
+    this.wantsPlay = true;
+    this.player.playVideo(); // only ever called from the visitor's Play action
+    return new Promise((resolve, reject) => {
+      const started = Date.now();
+      const check = () => {
+        if (this.state === YT_STATE.PLAYING) return resolve();
+        if (this.blocked || Date.now() - started > 12000) {
+          this.wantsPlay = false;
+          return reject(playbackError('PRESS PLAY'));
+        }
+        window.setTimeout(check, 100);
+      };
+      check();
+    });
+  }
+
+  pause() {
+    this.wantsPlay = false;
+    if (this.ready) this.player.pauseVideo();
+    this.setPlaying(false);
+  }
+
+  seek(seconds) {
+    this.offset = Math.max(0, seconds);
+    // seekTo() on a cued or stopped video would start playback, so a seek
+    // made before Play is kept and applied when playback starts.
+    if (this.ready && [YT_STATE.PLAYING, YT_STATE.PAUSED, YT_STATE.BUFFERING].includes(this.state)) {
+      this.pendingSeek = null;
+      this.player.seekTo(this.offset, true);
+    } else {
+      this.pendingSeek = this.offset;
+    }
+    return Promise.resolve();
+  }
+
+  setVolume(value) {
+    this.level = Math.max(0, Math.min(1, value));
+    if (this.ready) this.player.setVolume(Math.round(this.level * 100));
+  }
+
+  setMuted(muted) {
+    this.muted = Boolean(muted);
+    if (!this.ready) return;
+    if (this.muted) this.player.mute(); else this.player.unMute();
+  }
+
+  // 33⅓ -> 1x, 45 -> 1.25x. Returns false when the video can't play at 1.25x.
+  setSpeed(multiplier) {
+    const wanted = multiplier > 1 ? 1.25 : 1;
+    if (!this.ready) { this.speed = wanted; return true; }
+    const rates = this.player.getAvailablePlaybackRates() || [];
+    if (!rates.includes(wanted)) return false;
+    this.speed = wanted;
+    this.player.setPlaybackRate(wanted);
+    return true;
+  }
+
+  applySpeed() {
+    if (this.speed === 1 || !this.ready) return;
+    const rates = this.player.getAvailablePlaybackRates() || [];
+    if (rates.includes(this.speed)) {
+      if (this.player.getPlaybackRate() !== this.speed) this.player.setPlaybackRate(this.speed);
+    } else {
+      this.speed = 1;
+      this.hooks.speedUnavailable();
+    }
+  }
+
+  next() { this.step(1); }
+
+  previous() { this.step(-1); }
+
+  step(direction) {
+    if (!this.ready) return;
+    if (this.playing) {
+      if (direction > 0) this.player.nextVideo(); else this.player.previousVideo();
+      return;
+    }
+    this.cueNeighbour(direction);
+  }
+
+  // Move to the neighbouring video without playing it.
+  cueNeighbour(direction) {
+    const count = (this.player.getPlaylist() || []).length;
+    const index = this.player.getPlaylistIndex();
+    if (!count || index < 0) return;
+    this.pendingSeek = null;
+    this.player.cuePlaylist({ listType: 'playlist', list: this.list, index: (index + direction + count) % count });
+  }
+}
+
 class GrooveTurntable extends HTMLElement {
   constructor() {
     super();
@@ -371,9 +632,12 @@ class GrooveTurntable extends HTMLElement {
     this.nodes['seek-hit'].addEventListener('pointerup', (event) => this.endSeek(event));
     this.nodes['seek-hit'].addEventListener('pointercancel', () => { this.seekPointer = false; });
     this.nodes['seek-hit'].addEventListener('keydown', (event) => this.seekByKeyboard(event));
+    const playlist = this.getAttribute('youtube-playlist');
+    if (playlist) this.useYouTube(playlist);
     this.updateTrack();
     this.updateSpeed();
     this.updateView();
+    if (this.yt && this.yt.failed) this.nodes['status-text'].textContent = this.yt.failMessage;
   }
 
   disconnectedCallback() {
@@ -381,7 +645,57 @@ class GrooveTurntable extends HTMLElement {
     if (this.audio.playing) this.audio.pause();
   }
 
-  get currentTrack() { return TRACKS[this.trackIndex]; }
+  // YouTube mode: the vinyl graphic is hidden (CSS) and an IFrame player is
+  // mounted in a screen above the platter; this.audio becomes the adapter.
+  useYouTube(playlist) {
+    if (!/^https?:$/.test(window.location.protocol)) {
+      // Opened from disk: keep the vinyl and say where to play (see YouTubeAudio).
+      this.yt = new YouTubeAudio(null, playlist, {});
+      this.audio.pause();
+      this.audio = this.yt;
+      this.nodes['deck'].classList.add('yt-unavailable');
+      return;
+    }
+    const screen = document.createElement('div');
+    screen.className = 'yt-screen';
+    screen.setAttribute('part', 'screen');
+    const mount = document.createElement('div');
+    screen.appendChild(mount);
+    this.nodes['deck'].appendChild(screen);
+    this.audio.pause();
+    this.yt = new YouTubeAudio(mount, playlist, {
+      playing: (playing) => this.syncPlaying(playing),
+      track: () => {
+        this.updateTrack();
+        this.dispatchEvent(new CustomEvent('trackchange', { detail: { track: this.currentTrack }, bubbles: true, composed: true }));
+      },
+      status: (text) => { this.nodes['status-text'].textContent = text; },
+      speedUnavailable: () => {
+        this.rpm = 33.333;
+        this.updateSpeed();
+        this.nodes['status-text'].textContent = 'SPEED UNAVAILABLE';
+      },
+      unavailable: (message) => {
+        this.nodes['deck'].classList.add('yt-unavailable');
+        this.nodes['status-text'].textContent = message;
+      },
+    });
+    this.audio = this.yt;
+    this.audio.setVolume(this.volume / 100);
+  }
+
+  // Playback state reported by the YouTube player itself (end of a video,
+  // buffering, a click inside the video, a skipped error).
+  syncPlaying(playing) {
+    if (playing === this.playing) return;
+    this.playing = playing;
+    this.toggleAttribute('playing', playing);
+    if (playing) this.animateProgress(); else window.cancelAnimationFrame(this.animationFrame);
+    this.updateView();
+    this.dispatchEvent(new CustomEvent('playstatechange', { detail: { playing }, bubbles: true, composed: true }));
+  }
+
+  get currentTrack() { return this.yt ? this.yt.track : TRACKS[this.trackIndex]; }
   get currentTime() { return this.audio.position; }
 
   // Public mute switch used by the global M shortcut (js/shortcuts.js).
@@ -402,15 +716,17 @@ class GrooveTurntable extends HTMLElement {
     try {
       if (this.currentTime >= this.currentTrack.length) this.audio.offset = 0;
       await this.audio.play(this.currentTrack, this.audio.offset);
-      this.playing = true;
-      this.setAttribute('playing', '');
-      this.dispatchEvent(new CustomEvent('playstatechange', { detail: { playing: true }, bubbles: true, composed: true }));
+      if (!this.playing) {
+        this.playing = true;
+        this.setAttribute('playing', '');
+        this.dispatchEvent(new CustomEvent('playstatechange', { detail: { playing: true }, bubbles: true, composed: true }));
+      }
       this.animateProgress();
       this.updateView();
     } catch (error) {
-      this.nodes['status-text'].textContent = 'AUDIO UNAVAILABLE';
+      this.nodes['status-text'].textContent = (error && error.statusText) || 'AUDIO UNAVAILABLE';
       this.dispatchEvent(new CustomEvent('playererror', { detail: { error }, bubbles: true, composed: true }));
-      console.error(error);
+      if (!(error && error.statusText)) console.error(error);
     }
   }
 
@@ -428,7 +744,7 @@ class GrooveTurntable extends HTMLElement {
     const paint = () => {
       if (!this.isConnected || !this.playing) return;
       let position = this.audio.position;
-      if (position >= this.currentTrack.length) {
+      if (!this.yt && position >= this.currentTrack.length) {
         this.trackIndex = (this.trackIndex + 1) % TRACKS.length;
         this.audio.pause();
         this.audio.offset = 0;
@@ -445,7 +761,7 @@ class GrooveTurntable extends HTMLElement {
 
   paintProgress(position = this.currentTime) {
     const track = this.currentTrack;
-    const fraction = Math.max(0, Math.min(1, position / track.length));
+    const fraction = track.length > 0 ? Math.max(0, Math.min(1, position / track.length)) : 0;
     const amount = `${(fraction * 100).toFixed(2)}%`;
     this.nodes['progress-light'].style.setProperty('--progress', amount);
     this.nodes['current-time'].textContent = clock(position);
@@ -484,8 +800,12 @@ class GrooveTurntable extends HTMLElement {
   }
 
   toggleSpeed() {
-    this.rpm = this.rpm === 33.333 ? 45 : 33.333;
-    this.audio.setSpeed(this.rpm / 33.333);
+    const rpm = this.rpm === 33.333 ? 45 : 33.333;
+    if (this.audio.setSpeed(rpm / 33.333) === false) {
+      this.nodes['status-text'].textContent = 'SPEED UNAVAILABLE';
+      return;
+    }
+    this.rpm = rpm;
     this.updateSpeed();
     this.dispatchEvent(new CustomEvent('speedchange', { detail: { rpm: this.rpm }, bubbles: true, composed: true }));
   }
@@ -518,7 +838,10 @@ class GrooveTurntable extends HTMLElement {
     if (wasPlaying) await this.play();
   }
 
-  async next() { await this.selectTrack(this.trackIndex + 1); }
+  async next() {
+    if (this.yt) return this.yt.next();
+    await this.selectTrack(this.trackIndex + 1);
+  }
 
   async previous() {
     if (this.currentTime > 4) {
@@ -527,6 +850,7 @@ class GrooveTurntable extends HTMLElement {
       this.dispatchEvent(new CustomEvent('seek', { detail: { seconds: 0 }, bubbles: true, composed: true }));
       return;
     }
+    if (this.yt) return this.yt.previous();
     await this.selectTrack(this.trackIndex - 1);
   }
 
