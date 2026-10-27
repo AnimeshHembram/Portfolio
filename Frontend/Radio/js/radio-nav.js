@@ -5,9 +5,11 @@
 // inside #musicNav on radio.html, with exactly the options
 // ../js/music/m2-nav.js uses on M2: same items, particle settings,
 // timings and colours. The only differences: Radio is the active tab
-// here, and Songs opens the M2 page.
+// here, and Songs opens the Music page (M4 design, music-m4.html).
 //
-//   Songs     -> ../m2.html (the Music page, Songs active)
+//   Songs     -> ../music-m4.html (the Music page in the M4 design, Songs active)
+//                (was ../m2.html until 2026-10-26: returning from Radio brought back
+//                the old M2 turntable)
 //   My Music  -> as on M2: only the marker moves (nothing behind it yet)
 //   Radio     -> this page; choosing it moves the marker back
 //
@@ -27,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var items = [{ label: "Songs" }, { label: "My Music" }, { label: "Radio" }];
   var tabs = ["tab-songs", "tab-my-sounds", "tab-fm"];
   var FM_INDEX = 2;
-  var SONGS_URL = "../m2.html";
+  var SONGS_URL = "../music-m4.html";
 
   var leftForSongs = false;
 
