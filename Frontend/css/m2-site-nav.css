@@ -169,7 +169,7 @@
   /* left padding puts the item text exactly under the letter */
   padding: 0.35rem 1.25rem 0.9rem calc((var(--btn) - var(--g) * 0.9) / 2);
   list-style: none;
-  background: var(--ab2-paper);            /* stays readable where it crosses the big words */
+  background: transparent;                 /* text only, no panel (2026-10-27; was var(--ab2-paper)) */
   text-transform: none;
   white-space: nowrap;
 }
