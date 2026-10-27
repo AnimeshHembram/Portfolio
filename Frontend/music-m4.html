@@ -162,14 +162,12 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .m4-stage.is-dragging, .m4-stage.is-dragging .card { cursor: grabbing; }
 
 /* ---------- title badge ---------- */
+/* song title under the player: plain text on the background, no card (2026-10-27) */
 .badge {
-  border-radius: 20px;
   min-width: min(180px, 100%); max-width: min(320px, 100%);
   padding: 8px 22px 9px; text-align: center; overflow: hidden;
-  box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
-    0 18px 40px -16px rgba(0,0,0,.8), 0 10px 36px -14px var(--tint);
-  transition: box-shadow 0.8s ease;
+  background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
+  position: relative; z-index: 1;   /* stays above the player's and covers' soft drop shadows, as the card did */
 }
 #badgeText h1 { margin: 0; font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -0.016em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #badgeText p { margin: 0; font-size: 13px; line-height: 18px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -763,7 +761,9 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
     setAmbient(it.cover);
   }
   function badgeHTML(it) {
-    return "<h1>" + esc(it.title || "Loading…") + "</h1><p>" + esc(it.artist || (it.yt ? "YouTube" : "")) + "</p>";
+    // no "YouTube" source label here (the bottom bar keeps it); the artist shows once YouTube provides it.
+    // An empty second line keeps its height, so the carousel never shifts when the artist appears.
+    return "<h1>" + esc(it.title || "Loading…") + "</h1><p>" + (it.artist ? esc(it.artist) : "&nbsp;") + "</p>";
   }
 
   var drag = null, suppressClick = false;
