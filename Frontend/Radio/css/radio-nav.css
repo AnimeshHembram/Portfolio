@@ -53,3 +53,19 @@
 .mus-topbar > .ab2-nav .ab2-nav__item {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 0, 0, 0.5);
 }
+
+/* 2026-10-27 — Music tab labels (Songs / My Music / Radio) at the same size as on the
+   Music page (music-m4.html): 14px, 13px up to 480px wide, 12px up to 339px. The label
+   copy the tab effect draws over the active tab (.effect.text) gets the same size, so
+   the two never show through each other. "html" in front outranks css/m2-nav.css and
+   css/m2-site-nav.css, whichever order the files are loaded in. */
+html .mus-topbar > #musicNav nav ul li a,
+html .mus-topbar > #musicNav .effect.text { font-size: 14px; }
+@media (max-width: 480px) {
+  html .mus-topbar > #musicNav nav ul li a,
+  html .mus-topbar > #musicNav .effect.text { font-size: 13px; }
+}
+@media (max-width: 339px) {
+  html .mus-topbar > #musicNav nav ul li a,
+  html .mus-topbar > #musicNav .effect.text { font-size: 12px; }
+}
