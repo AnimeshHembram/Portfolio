@@ -360,42 +360,23 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* keeps the floating links readable over bright album art */
 .mus-topbar > .ab2-nav .ab2-nav__item { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 0, 0, 0.5); }
 
-/* tabs: translucent glass pill, no border */
-.mus-topbar > #musicNav {
-  padding: 4px; border-radius: 999px;
-  background: rgba(30, 26, 42, 0.42);
-  -webkit-backdrop-filter: blur(28px) saturate(170%); backdrop-filter: blur(28px) saturate(170%);
-  box-shadow:
-    0 12px 32px -14px rgba(0, 0, 0, 0.8),
-    0 0 30px -10px rgba(154, 107, 255, 0.45);
-}
+/* tabs: plain floating text — no bar, no pill, no glow. Active tab = white semibold text. */
+.mus-topbar > #musicNav { padding: 4px; }   /* padding kept so the labels stay exactly where they were */
 .mus-topbar > #musicNav nav ul { gap: 2px; padding: 0; text-shadow: none; }
 .mus-topbar > #musicNav nav ul li a { padding: 0.5em 1.15em; font-size: 14px; font-weight: 500; letter-spacing: -0.005em; }
+.mus-topbar > #musicNav nav ul li { color: rgba(235, 235, 245, 0.6); }
 .mus-topbar > #musicNav nav ul li:not(.active):hover { color: #fff; }
-/* resting active pill (the effect layer below only draws it while switching) */
-.mus-topbar > #musicNav nav ul li::after {
-  border-radius: 100vw;
-  background: linear-gradient(120deg, #ff4fb4 0%, #9a6bff 55%, #3d7bff 100%);
-  box-shadow: 0 0 14px rgba(255, 79, 180, 0.5), 0 0 26px rgba(84, 140, 255, 0.32);
-}
-.mus-topbar > #musicNav nav ul li.active { text-shadow: 0 0 10px rgba(255, 255, 255, 0.45); }
-.mus-topbar > #musicNav .effect.text { font-size: 14px; font-weight: 500; letter-spacing: -0.005em; }
-.mus-topbar > #musicNav .effect.text.active { text-shadow: 0 0 10px rgba(255, 255, 255, 0.45); }
-/* active pill: no gooey blend layer (it needs a flat light page); a neon gradient pill instead */
-.mus-topbar > #musicNav .effect.filter { filter: none; mix-blend-mode: normal; }
-.mus-topbar > #musicNav .effect.filter::before { display: none; }
-.mus-topbar > #musicNav .effect.filter::after {
-  background: linear-gradient(120deg, #ff4fb4 0%, #9a6bff 55%, #3d7bff 100%);
-  box-shadow: 0 0 14px rgba(255, 79, 180, 0.5), 0 0 26px rgba(84, 140, 255, 0.32);
-}
-.mus-topbar > #musicNav .point { width: 8px; height: 8px; box-shadow: 0 0 8px var(--color); }
+.mus-topbar > #musicNav nav ul li.active { color: #fff; }
+.mus-topbar > #musicNav nav ul li.active a { font-weight: 600; }
+/* the GooeyNav's pill layers (css/m2-nav.css): resting pill, switching pill + particles, and
+   the duplicate active label drawn over the pill — none of them are wanted here */
+.mus-topbar > #musicNav nav ul li::after { content: none; }
+.mus-topbar > #musicNav .effect { display: none; }
 @media (max-width: 480px) {
   .mus-topbar > #musicNav nav ul li a { padding: 0.5em 0.8em; font-size: 13px; }
-  .mus-topbar > #musicNav .effect.text { font-size: 13px; }
 }
 @media (max-width: 339px) {
   .mus-topbar > #musicNav nav ul li a { padding: 0.5em 0.55em; font-size: 12px; }
-  .mus-topbar > #musicNav .effect.text { font-size: 12px; }
 }
 /* Layering: ambient below everything, the carousel in its own z 0 layer, the top bar
    (tabs and the A / H / X menu) above the carousel. */
