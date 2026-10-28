@@ -948,7 +948,12 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
               self.errors += 1;
               if (self.errors >= 5) { hooks.playing(false); hooks.error("This playlist can't be played right now"); return; }
               hooks.error([100, 101, 150].indexOf(e.data) >= 0 ? "Video unavailable · skipping" : "Playback error · skipping");
-              setTimeout(function () { if (self.items.length) self.load((self.index + 1) % self.items.length, self.wantsPlay); }, 1200);
+              setTimeout(function () {
+                if (!self.items.length) return;
+                var nx = (self.index + 1) % self.items.length;
+                self.load(nx, self.wantsPlay);
+                hooks.index(nx);   // keep the carousel, title and bottom bar on the song the player moved to
+              }, 1200);
             },
             onAutoplayBlocked: function () { self.wantsPlay = false; hooks.error("Press play to start"); }
           }
@@ -1272,7 +1277,8 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
     var keep = Math.min(10, n - 1), recent = [];
     try { recent = JSON.parse(window.localStorage.getItem(START_KEY) || "[]"); } catch (err) { recent = []; }
     if (!Array.isArray(recent)) recent = [];
-    recent = recent.slice(-keep);
+    var known = {}; for (i = 0; i < n; i++) known[keyOf(list[i])] = true;
+    recent = recent.filter(function (k) { return typeof k === "string" && known[k]; }).slice(-keep);   // drop junk and songs no longer in the playlist
     var pool = [];
     for (i = 0; i < n; i++) if (recent.indexOf(keyOf(list[i])) < 0) pool.push(i);
     if (!pool.length) for (i = 0; i < n; i++) pool.push(i);
