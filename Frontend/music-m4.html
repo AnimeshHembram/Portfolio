@@ -611,12 +611,13 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   var LOCAL_ITEMS = ITEMS.filter(function (it) { return !it.empty; });
   var ON_WEB = /^https?:$/.test(window.location.protocol);
   // ---------- playlists and the location rule (edit here to add playlists or regions) ----------
-  // YouTube playlist IDs. An empty or invalid ID is skipped: its visitors get the fallback.
+  // YouTube playlist IDs (all by Mr Darr). Menu order = this order. An empty or invalid ID is
+  // skipped, and its visitors get the fallback.
   var PLAYLISTS = {
-    indian:  { label: "Indian",  id: "PLMVMSl6aBQeo" },   // same playlist as m2.html; also the fallback
-    bengali: { label: "Bengali", id: "" },   // paste the Bengali playlist ID here
-    tamil:   { label: "Tamil",   id: "" },   // paste the Tamil playlist ID here
-    telugu:  { label: "Telugu",  id: "" }    // paste the Telugu playlist ID here
+    indian: { label: "Indian", id: "PLMVMSl6aBQeo" },   // same playlist as m2.html; also the fallback
+    tamil:  { label: "Tamil",  id: "PLSHoRzWfg72M" },
+    telugu: { label: "Telugu", id: "PLdJdeibUf3kM" },
+    out:    { label: "Out",    id: "PLY1O7bRmof54" }    // menu only: not assigned to any region
   };
   var FALLBACK_PLAYLIST = "indian";
   // Indian state → playlist. Matched on the state code Cloudflare reports (ISO 3166-2, e.g. "WB")
@@ -624,7 +625,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   // failed lookup all use FALLBACK_PLAYLIST. To add a region, add one line.
   var REGION_PLAYLISTS = [
     { codes: ["KA"],       names: ["Karnataka"],      playlist: "indian" },    // Bengaluru, Karnataka
-    { codes: ["WB"],       names: ["West Bengal"],    playlist: "bengali" },
+    { codes: ["WB"],       names: ["West Bengal"],    playlist: "indian" },    // no Bengali playlist yet
     { codes: ["TN"],       names: ["Tamil Nadu"],     playlist: "tamil" },
     { codes: ["AP"],       names: ["Andhra Pradesh"], playlist: "telugu" },
     { codes: ["TG", "TS"], names: ["Telangana"],      playlist: "telugu" }
