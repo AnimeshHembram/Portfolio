@@ -512,6 +512,11 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
         <span>Repeat Track</span>
         <svg viewBox="0 0 24 24"><path d="M4 12V10a4 4 0 0 1 4-4h11M16 3l3 3-3 3M20 12v2a4 4 0 0 1-4 4H5M8 21l-3-3 3-3"/></svg>
       </button>
+      <div id="playlistGroup" hidden>
+        <div class="sep" role="separator"></div>
+        <h2 id="playlistHead">Playlist</h2>
+        <div id="playlistRows" role="group" aria-labelledby="playlistHead"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -604,8 +609,71 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   var N = ITEMS.length;
   var playable = ITEMS.map(function (it, i) { return it.empty ? -1 : i; }).filter(function (i) { return i >= 0; });
   var LOCAL_ITEMS = ITEMS.filter(function (it) { return !it.empty; });
-  var PLAYLIST_ID = "PLMVMSl6aBQeo";   // same playlist as m2.html
   var ON_WEB = /^https?:$/.test(window.location.protocol);
+  // ---------- playlists and the location rule (edit here to add playlists or regions) ----------
+  // YouTube playlist IDs. An empty or invalid ID is skipped: its visitors get the fallback.
+  var PLAYLISTS = {
+    indian:  { label: "Indian",  id: "PLMVMSl6aBQeo" },   // same playlist as m2.html; also the fallback
+    bengali: { label: "Bengali", id: "" },   // paste the Bengali playlist ID here
+    tamil:   { label: "Tamil",   id: "" },   // paste the Tamil playlist ID here
+    telugu:  { label: "Telugu",  id: "" }    // paste the Telugu playlist ID here
+  };
+  var FALLBACK_PLAYLIST = "indian";
+  // Indian state → playlist. Matched on the state code Cloudflare reports (ISO 3166-2, e.g. "WB")
+  // or on the state's name. India only; any state not listed, any other country, and a missing or
+  // failed lookup all use FALLBACK_PLAYLIST. To add a region, add one line.
+  var REGION_PLAYLISTS = [
+    { codes: ["KA"],       names: ["Karnataka"],      playlist: "indian" },    // Bengaluru, Karnataka
+    { codes: ["WB"],       names: ["West Bengal"],    playlist: "bengali" },
+    { codes: ["TN"],       names: ["Tamil Nadu"],     playlist: "tamil" },
+    { codes: ["AP"],       names: ["Andhra Pradesh"], playlist: "telugu" },
+    { codes: ["TG", "TS"], names: ["Telangana"],      playlist: "telugu" }
+  ];
+  function usablePlaylist(key) {
+    var p = PLAYLISTS[key];
+    return !!(p && typeof p.id === "string" && /^[A-Za-z0-9_-]{10,64}$/.test(p.id));
+  }
+  function playlistForRegion(loc) {
+    var key = FALLBACK_PLAYLIST;
+    if (loc && String(loc.country || "").toUpperCase() === "IN") {
+      var code = String(loc.regionCode || "").toUpperCase().replace(/^IN-/, "");
+      var name = String(loc.region || "").trim().toLowerCase();
+      for (var r = 0; r < REGION_PLAYLISTS.length; r++) {
+        var rule = REGION_PLAYLISTS[r];
+        var byCode = code && rule.codes.indexOf(code) >= 0;
+        var byName = name && rule.names.some(function (n) { return n.toLowerCase() === name; });
+        if (byCode || byName) { key = rule.playlist; break; }
+      }
+    }
+    return usablePlaylist(key) ? key : FALLBACK_PLAYLIST;
+  }
+  // Coarse region from the site's own Cloudflare function (/api/visitor-region, IP-based, no GPS,
+  // no prompt). Bounded by a time limit; any failure resolves to null ("unavailable").
+  // ?m4region=WB (or IN-WB) on the page URL overrides the lookup, for testing.
+  function detectRegion(ms) {
+    try {
+      var forced = new URLSearchParams(window.location.search).get("m4region");
+      if (forced) return Promise.resolve({ country: "IN", regionCode: forced, region: "" });
+    } catch (err) {}
+    if (!ON_WEB || !window.fetch) return Promise.resolve(null);
+    return new Promise(function (resolve) {
+      var done = false, ctrl = window.AbortController ? new AbortController() : null;
+      function finish(v) { if (done) return; done = true; clearTimeout(timer); resolve(v); }
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); finish(null); }, ms);
+      fetch("/api/visitor-region", { cache: "no-store", credentials: "omit", signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { finish(j && typeof j === "object" ? j : null); }, function () { finish(null); });
+    });
+  }
+  // A playlist the visitor picked in the ⋯ menu wins for the rest of this tab's session.
+  var PLAYLIST_PICK_KEY = "m4:playlist";
+  function sessionPlaylist() {
+    try { var k = window.sessionStorage.getItem(PLAYLIST_PICK_KEY); return usablePlaylist(k) ? k : null; } catch (err) { return null; }
+  }
+  var manualPlaylist = sessionPlaylist();
+  // Starts at once, alongside the YouTube API, so the page never waits on it.
+  var initialPlaylist = manualPlaylist ? Promise.resolve(manualPlaylist)
+    : detectRegion(2500).then(function (loc) { return manualPlaylist || playlistForRegion(loc); });
   var TINTS = ["rgba(255,79,180,.5)", "rgba(84,200,255,.5)", "rgba(154,107,255,.5)", "rgba(255,90,120,.5)", "rgba(45,220,140,.45)", "rgba(61,123,255,.5)"];
 
   // ---------- helpers ----------
@@ -908,9 +976,31 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
       if (d.author) it.artist = d.author.replace(/\s+-\s+Topic$/i, "");
       hooks.meta(self.index);
     }
+    this.listKey = FALLBACK_PLAYLIST;
+    var listWatch = 0;
+    function cueList(key, index) {
+      self.listKey = key;
+      player.cuePlaylist({ listType: "playlist", list: PLAYLISTS[key].id, index: index || 0 });
+      // a playlist that doesn't load (bad or private ID) falls back to the Indian playlist
+      clearTimeout(listWatch);
+      if (key !== FALLBACK_PLAYLIST) listWatch = setTimeout(function () {
+        if (!self.items.length) { hooks.error(PLAYLISTS[key].label + " playlist unavailable · playing " + PLAYLISTS[FALLBACK_PLAYLIST].label); cueList(FALLBACK_PLAYLIST, 0); }
+      }, 7000);
+    }
+    var switching = false, listed = false;
+    this.switchList = function (key) {
+      if (!player || !usablePlaylist(key) || key === self.listKey) return;
+      self.wantsPlay = false; stopPoll();
+      if (self.state === YT_STATE.PLAYING || self.state === YT_STATE.BUFFERING) player.pauseVideo();
+      hooks.playing(false);
+      self.errors = 0;
+      if (!listed) { cueList(key, 0); return; }   // first list not in yet: just load the picked one instead
+      self.items = []; self.index = -1; switching = true;
+      cueList(key, 0);
+    };
     this.ready = loadYouTubeApi(15000).then(function (YT) {
       return new Promise(function (resolve, reject) {
-        var listTimer = setTimeout(function () { reject(new Error("Playlist did not load")); }, 15000);
+        var listTimer = setTimeout(function () { reject(new Error("Playlist did not load")); }, 20000);
         player = new YT.Player($("ytMount"), {
           width: "100%", height: "100%",
           host: "https://www.youtube-nocookie.com",
@@ -920,7 +1010,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
               player.setVolume(Math.round(self.level * 100));
               if (self.mutedFlag) player.mute(); else player.unMute();
               player.setLoop(true);
-              player.cuePlaylist({ listType: "playlist", list: PLAYLIST_ID, index: 0 });
+              initialPlaylist.then(function (key) { cueList(key, 0); });
             },
             onStateChange: function (e) {
               var st = self.state = e.data;
@@ -930,7 +1020,9 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
                   self.items = ids.map(function (id, i) {
                     return { yt: true, id: id, title: "", artist: "", album: "YouTube", cover: "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg", tint: TINTS[i % TINTS.length] };
                   });
-                  clearTimeout(listTimer);
+                  clearTimeout(listTimer); clearTimeout(listWatch);
+                  if (switching) { switching = false; self.index = player.getPlaylistIndex(); hooks.list(); return; }
+                  listed = true;
                   resolve();
                 }
               }
@@ -965,7 +1057,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
       self.index = i; self.pendingSeek = null;
       hooks.meta(i); hooks.seekable(false);
       if (autoplay) { self.wantsPlay = true; player.playVideoAt(i); }   // only ever from a visitor action
-      else player.cuePlaylist({ listType: "playlist", list: PLAYLIST_ID, index: i });
+      else player.cuePlaylist({ listType: "playlist", list: PLAYLISTS[self.listKey].id, index: i });
     };
     this.play = function () { if (!player) return; self.wantsPlay = true; player.playVideo(); };
     this.pause = function () { self.wantsPlay = false; if (player) player.pauseVideo(); };
@@ -1026,6 +1118,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
       if (ctl.mode === "local") ctl.step(1, true);   // YouTube advances through its playlist by itself
     },
     mute: function () { refreshVolume(); },
+    list: function () { useEngine(ctl.engine); },   // a different playlist finished loading (cued, not playing)
     error: function (msg) { toast(msg); }
   };
 
@@ -1240,7 +1333,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   function renderInfo() {
     var it = items[ctl.current]; if (!it) return;
     var body = '<div class="head"><span class="art">' + imgTag(it) + '</span><span><b>' + esc(it.title || "Loading…") + "</b><small>" + esc(it.artist || "YouTube") + (it.album && !it.yt ? " · " + esc(it.album) : "") + "</small></span></div>";
-    if (it.yt) body += '<p>Playing from YouTube. <a href="https://www.youtube.com/watch?v=' + encodeURIComponent(it.id) + '&amp;list=' + PLAYLIST_ID + '" target="_blank" rel="noopener">Watch on YouTube</a></p>';
+    if (it.yt) body += '<p>Playing from YouTube. <a href="https://www.youtube.com/watch?v=' + encodeURIComponent(it.id) + '&amp;list=' + encodeURIComponent(PLAYLISTS[ctl.engine.listKey || FALLBACK_PLAYLIST].id) + '" target="_blank" rel="noopener">Watch on YouTube</a></p>';
     else body += '<p>Licensed under <a href="' + it.license.url + '" target="_blank" rel="noopener license">' + it.license.name + '</a>. <a href="' + it.source + '" target="_blank" rel="noopener">Artist page</a></p>';
     body += "<p>No lyrics are available for this track.</p>";
     $("infoBody").innerHTML = body;
@@ -1253,6 +1346,33 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   }
   $("shuffleRow").addEventListener("click", function () { toggleRow(this, "shuffle"); });
   $("repeatRow").addEventListener("click", function () { toggleRow(this, "repeat"); });
+
+  // ---------- playlist switcher (⋯ menu) ----------
+  // Lists only playlists with a valid ID; hidden when there's just one, and in local mode.
+  // A pick is kept for this tab's session (sessionStorage) and is never overridden by the location rule.
+  var playlistKeys = Object.keys(PLAYLISTS).filter(usablePlaylist);
+  function markPlaylist(key) {
+    $("playlistRows").querySelectorAll(".mrow").forEach(function (r) { r.setAttribute("aria-checked", String(r.dataset.list === key)); });
+  }
+  if (ON_WEB && playlistKeys.length > 1) {
+    $("playlistRows").innerHTML = playlistKeys.map(function (k) {
+      return '<button class="mrow" type="button" role="menuitemradio" aria-checked="false" data-list="' + k + '">' +
+        '<svg class="mcheck" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg><span>' + esc(PLAYLISTS[k].label) + "</span><span></span></button>";
+    }).join("");
+    $("playlistGroup").hidden = false;
+    initialPlaylist.then(function (k) { if (!manualPlaylist) markPlaylist(k); });
+    $("playlistRows").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-list]"); if (!b) return;
+      var key = b.dataset.list;
+      manualPlaylist = key;
+      try { window.sessionStorage.setItem(PLAYLIST_PICK_KEY, key); } catch (err) {}
+      markPlaylist(key);
+      closePops();
+      if (ctl.mode === "yt" && ctl.engine.listKey === key) return;
+      toast(PLAYLISTS[key].label + " playlist");
+      if (ctl.engine && ctl.engine.switchList) ctl.engine.switchList(key);
+    });
+  }
 
   if ("mediaSession" in navigator) {
     try {
@@ -1270,12 +1390,14 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   // visitor gets a different song each time. Stored only in this browser (localStorage);
   // if storage is blocked it is simply random. Nothing plays until the visitor presses Play.
   var START_KEY = "m4:recentStarts";
-  function pickStart(list) {
+  function pickStart(list, listKey) {
+    // each playlist keeps its own recent list (the Indian one keeps the original key)
+    var store = !listKey || listKey === FALLBACK_PLAYLIST ? START_KEY : START_KEY + ":" + listKey;
     var n = list.length, i;
     if (n <= 1) return 0;
     function keyOf(it) { return it.id || it.src || it.title; }
     var keep = Math.min(10, n - 1), recent = [];
-    try { recent = JSON.parse(window.localStorage.getItem(START_KEY) || "[]"); } catch (err) { recent = []; }
+    try { recent = JSON.parse(window.localStorage.getItem(store) || "[]"); } catch (err) { recent = []; }
     if (!Array.isArray(recent)) recent = [];
     var known = {}; for (i = 0; i < n; i++) known[keyOf(list[i])] = true;
     recent = recent.filter(function (k) { return typeof k === "string" && known[k]; }).slice(-keep);   // drop junk and songs no longer in the playlist
@@ -1284,7 +1406,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
     if (!pool.length) for (i = 0; i < n; i++) pool.push(i);
     var pick = pool[Math.floor(Math.random() * pool.length)];
     recent.push(keyOf(list[pick]));
-    try { window.localStorage.setItem(START_KEY, JSON.stringify(recent.slice(-keep))); } catch (err) {}
+    try { window.localStorage.setItem(store, JSON.stringify(recent.slice(-keep))); } catch (err) {}
     return pick;
   }
 
@@ -1292,7 +1414,8 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
     ctl.engine = engine; ctl.mode = engine.mode;
     document.body.classList.toggle("is-yt", engine.mode === "yt");
     items = engine.items; N = items.length; ctl.current = -1;
-    var start = pickStart(items);
+    var start = pickStart(items, engine.listKey);
+    if (engine.listKey) markPlaylist(engine.listKey);
     sel = start;
     car.pos = reduced() ? start : start - 1.6; car.target = start; car.vel = 0;
     buildCards();
@@ -1309,6 +1432,7 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   }
   function useLocal(note) {
     $("ytFrame").hidden = true;
+    $("playlistGroup").hidden = true;
     var n = $("sourceNote"); n.textContent = note; n.hidden = false;
     useEngine(new LocalEngine(hooks));
   }
