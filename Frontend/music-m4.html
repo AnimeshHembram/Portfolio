@@ -1259,20 +1259,45 @@ body.is-yt { --card: max(216px, min(22vw, 34vh, 300px)); }
   }
 
   // ---------- start ----------
+  // ---------- random starting song ----------
+  // Every visit starts on a random song instead of always the first one. This browser's
+  // recent starting songs (up to 10, fewer for short lists) are skipped, so a returning
+  // visitor gets a different song each time. Stored only in this browser (localStorage);
+  // if storage is blocked it is simply random. Nothing plays until the visitor presses Play.
+  var START_KEY = "m4:recentStarts";
+  function pickStart(list) {
+    var n = list.length, i;
+    if (n <= 1) return 0;
+    function keyOf(it) { return it.id || it.src || it.title; }
+    var keep = Math.min(10, n - 1), recent = [];
+    try { recent = JSON.parse(window.localStorage.getItem(START_KEY) || "[]"); } catch (err) { recent = []; }
+    if (!Array.isArray(recent)) recent = [];
+    recent = recent.slice(-keep);
+    var pool = [];
+    for (i = 0; i < n; i++) if (recent.indexOf(keyOf(list[i])) < 0) pool.push(i);
+    if (!pool.length) for (i = 0; i < n; i++) pool.push(i);
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    recent.push(keyOf(list[pick]));
+    try { window.localStorage.setItem(START_KEY, JSON.stringify(recent.slice(-keep))); } catch (err) {}
+    return pick;
+  }
+
   function useEngine(engine) {
     ctl.engine = engine; ctl.mode = engine.mode;
     document.body.classList.toggle("is-yt", engine.mode === "yt");
-    items = engine.items; N = items.length; sel = 0; ctl.current = -1;
-    car.pos = reduced() ? 0 : -1.6; car.target = 0; car.vel = 0;
+    items = engine.items; N = items.length; ctl.current = -1;
+    var start = pickStart(items);
+    sel = start;
+    car.pos = reduced() ? start : start - 1.6; car.target = start; car.vel = 0;
     buildCards();
     engine.setVolume(ctl.vol);
     if (storedMute()) engine.setMuted(true);
     refreshVolume();
-    setCurrent(0, false);
-    if (engine.mode === "local") engine.load(0, false);
-    $("badgeText").innerHTML = badgeHTML(items[0]);
-    root.style.setProperty("--tint", items[0].tint);
-    setAmbient(items[0].cover);
+    setCurrent(start, false);
+    engine.load(start, false);   // cue only: YouTube cues the picked video, local mode loads the file
+    $("badgeText").innerHTML = badgeHTML(items[start]);
+    root.style.setProperty("--tint", items[start].tint);
+    setAmbient(items[start].cover);
     anim(stage, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: "ease-out" });
     kick();
   }
